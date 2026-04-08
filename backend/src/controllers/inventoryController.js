@@ -1,7 +1,8 @@
 const InventoryService = require('../services/InventoryService');
 
 exports.getIngredients = async (req, res) => {
-  const data = await InventoryService.getAllIngredients();
+  const { page = 1, limit = 10 } = req.query;
+  const data = await InventoryService.getAllIngredients({ page: +page, limit: +limit });
   res.json(data);
 };
 
@@ -22,7 +23,8 @@ exports.addIngredient = async (req, res) => {
 
 
 exports.getRecipe = async (req, res) => {
-  const data = await InventoryService.getAllRecipes();
+  const { page = 1, limit = 10 } = req.query;
+  const data = await InventoryService.getAllRecipes({ page: +page, limit: +limit });
   res.json(data);
 };
 
@@ -51,8 +53,9 @@ exports.prepareDish = async (req, res) => {
 
 exports.servedDishes = async (req, res) => {
   try {
-    const result = await InventoryService.getConsumptionLogs();
-    res.json({ message: "successfull", result });
+    const { page = 1, limit = 10 } = req.query;
+    const result = await InventoryService.getConsumptionLogs({ page: +page, limit: +limit });
+    res.json(result);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -65,11 +68,16 @@ exports.logWaste = async (req, res) => {
 };
 
 exports.getLogWaste = async (req, res) => {
-  const result = await InventoryService.getWasteLogs();
+  const { page = 1, limit = 10 } = req.query;
+  const result = await InventoryService.getWasteLogs({ page: +page, limit: +limit });
   res.json(result);
 };
 
 exports.getDashboard = async (req, res) => {
-  const stats = await InventoryService.getDashboardStats();
-  res.json(stats);
+  try {
+    const stats = await InventoryService.getDashboardStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };

@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const authRoutes = require('./routes/authRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', inventoryRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)

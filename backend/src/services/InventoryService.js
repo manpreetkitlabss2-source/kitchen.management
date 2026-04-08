@@ -37,8 +37,13 @@ class InventoryService {
     );
   }
 
-  async getAllIngredients() {
-    return await Ingredient.find();
+  async getAllIngredients({ page = 1, limit = 10 } = {}) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      Ingredient.find().skip(skip).limit(limit).lean(),
+      Ingredient.countDocuments()
+    ]);
+    return { data, page, limit, total };
   }
 
   // --- Recipe Logic ---
@@ -46,8 +51,13 @@ class InventoryService {
     return await Recipe.create({ name, ingredients: ingredientsMap });
   }
 
-  async getAllRecipes() {
-    return await Recipe.find();
+  async getAllRecipes({ page = 1, limit = 10 } = {}) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      Recipe.find().populate('ingredients.ingredient_id', 'name unit').skip(skip).limit(limit).lean(),
+      Recipe.countDocuments()
+    ]);
+    return { data, page, limit, total };
   }
   // --- Consumption Logic (The Auto-Deduction Engine) ---
   async recordConsumption(recipeId, items = null) {
@@ -126,15 +136,33 @@ class InventoryService {
     }
   }
 
-  async getConsumptionLogs() {
-    return await Log.find().where({type: "consumption"});
+  async getConsumptionLogs({ page = 1, limit = 10 } = {}) {
+    const skip = (page - 1) * limit;
+    const filter = { type: 'consumption' };
+    const [data, total] = await Promise.all([
+      Log.find(filter)
+        .populate('ingredient_id', 'name unit')
+        .populate('recipe_id', 'name')
+        .sort({ created_at: -1 })
+        .skip(skip).limit(limit).lean(),
+      Log.countDocuments(filter)
+    ]);
+    return { data, page, limit, total };
   }
 
 
   // --- Waste Logic ---
-  async getWasteLogs() {
-    const result = await Log.find().where({type: "waste"});
-    return result;
+  async getWasteLogs({ page = 1, limit = 10 } = {}) {
+    const skip = (page - 1) * limit;
+    const filter = { type: 'waste' };
+    const [data, total] = await Promise.all([
+      Log.find(filter)
+        .populate('ingredient_id', 'name unit')
+        .sort({ created_at: -1 })
+        .skip(skip).limit(limit).lean(),
+      Log.countDocuments(filter)
+    ]);
+    return { data, page, limit, total };
   }
 
   async recordWaste(ingredientId, quantity, reason) {
@@ -151,20 +179,107 @@ class InventoryService {
 
   // --- Dashboard Analytics ---
   async getDashboardStats() {
-    const totalIngredients = await Ingredient.countDocuments();
-    const lowStockItems = await Ingredient.find({
-      $expr: { $lte: ["$current_stock", "$threshold_value"] }
-    });
-
-    // Aggregation for Waste
-    const wasteReport = await Log.aggregate([
-      { $match: { type: 'waste' } },
-      { $group: { _id: '$ingredient_id', totalWaste: { $sum: '$quantity' } } },
-      { $sort: { totalWaste: -1 } },
-      { $limit: 5 }
+    const [ingredientStats, logStats] = await Promise.all([
+      // Single $facet over Ingredient collection
+      Ingredient.aggregate([
+        {
+          $facet: {
+            counts: [
+              {
+                $group: {
+                  _id: null,
+                  total: { $sum: 1 },
+                  lowStock: {
+                    $sum: {
+                      $cond: [
+                        { $and: [
+                          { $gt: ['$current_stock', 0] },
+                          { $lte: ['$current_stock', '$threshold_value'] }
+                        ]},
+                        1, 0
+                      ]
+                    }
+                  },
+                  outOfStock: {
+                    $sum: { $cond: [{ $lte: ['$current_stock', 0] }, 1, 0] }
+                  }
+                }
+              }
+            ],
+            lowStockItems: [
+              { $match: { $expr: { $lte: ['$current_stock', '$threshold_value'] } } },
+              { $sort: { current_stock: 1 } },
+              { $limit: 5 },
+              { $project: { name: 1, unit: 1, current_stock: 1, threshold_value: 1 } }
+            ],
+            topStock: [
+              { $sort: { current_stock: -1 } },
+              { $limit: 5 },
+              { $project: { name: 1, current_stock: 1 } }
+            ]
+          }
+        }
+      ]),
+      // Single $facet over Log collection
+      Log.aggregate([
+        {
+          $facet: {
+            consumptionTotal: [
+              { $match: { type: 'consumption' } },
+              { $group: { _id: null, total: { $sum: '$quantity' } } }
+            ],
+            wasteTotal: [
+              { $match: { type: 'waste' } },
+              { $group: { _id: null, total: { $sum: '$quantity' } } }
+            ],
+            topWaste: [
+              { $match: { type: 'waste' } },
+              { $group: { _id: '$ingredient_id', totalWaste: { $sum: '$quantity' } } },
+              { $sort: { totalWaste: -1 } },
+              { $limit: 5 },
+              {
+                $lookup: {
+                  from: 'ingredients',
+                  localField: '_id',
+                  foreignField: '_id',
+                  as: 'ingredient'
+                }
+              },
+              { $unwind: { path: '$ingredient', preserveNullAndEmptyArrays: true } },
+              { $project: { name: '$ingredient.name', totalWaste: 1 } }
+            ]
+          }
+        }
+      ])
     ]);
 
-    return { totalIngredients, lowStockCount: lowStockItems.length, lowStockItems, wasteReport };
+    const ing = ingredientStats[0];
+    const logs = logStats[0];
+    const counts = ing.counts[0] || { total: 0, lowStock: 0, outOfStock: 0 };
+
+    return {
+      summary: {
+        totalIngredients: counts.total,
+        lowStockCount: counts.lowStock,
+        outOfStockCount: counts.outOfStock,
+        totalConsumption: logs.consumptionTotal[0]?.total || 0,
+        totalWaste: logs.wasteTotal[0]?.total || 0
+      },
+      counts: {
+        ingredients: counts.total,
+        lowStock: counts.lowStock,
+        outOfStock: counts.outOfStock
+      },
+      recent: {
+        lowStockItems: ing.lowStockItems,
+        topWaste: logs.topWaste
+      },
+      metrics: {
+        topStock: ing.topStock,
+        consumptionTotal: logs.consumptionTotal[0]?.total || 0,
+        wasteTotal: logs.wasteTotal[0]?.total || 0
+      }
+    };
   }
 }
 
