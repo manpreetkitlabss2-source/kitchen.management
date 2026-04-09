@@ -1,12 +1,3 @@
-Here is a **true 1-page Executive Summary** suitable for a **client proposal**, pitch deck, or cover page.
-It keeps the business value clear, includes your current system, in-progress upgrades, and future vision — but stays concise and professional.
-
-You can paste this directly into your proposal.
-
----
-
-# Executive Summary
-
 ## Kitchen Pro — Restaurant Management System
 
 ---

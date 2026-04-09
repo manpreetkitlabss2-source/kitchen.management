@@ -1,17 +1,3 @@
-You're absolutely right — for a **client proposal**, a BRD that is too long reduces readability and impact.
-Clients prefer:
-
-* **Concise**
-* **Clear business value**
-* **Minimal repetition**
-* **Professional structure**
-
-So below is a **minimized, client-ready BRD** that keeps the **core idea**, includes your **in-progress features**, and shows **future roadmap** — but without unnecessary verbosity.
-
-You can directly paste this into a proposal document.
-
----
-
 # Business Requirements Document (BRD)
 
 # Kitchen Pro — Restaurant Management System
