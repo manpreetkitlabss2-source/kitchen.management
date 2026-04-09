@@ -22,7 +22,7 @@ const SignupPage = () => {
     if(!name || !restaurantName || !password || !email){
       alert("Fill complete form");
     }
-    const res = await signupUser(name, restaurantName ,password, email)
+    const res = await signupUser({name, restaurantName, email, password})
     if(res.success){
       navigate("/");
     } else {

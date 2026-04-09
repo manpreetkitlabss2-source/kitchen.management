@@ -18,7 +18,7 @@ const LoginPage = () => {
       alert("Fill complete form");
     }
     try {
-      const res = await loginUser(password, email)
+      const res = await loginUser({password, email})
       if(res.success == true){
         navigate("/");
       } else {

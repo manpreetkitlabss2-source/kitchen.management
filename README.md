@@ -381,13 +381,13 @@ Authorization: Bearer <token>
 #### POST `/api/auth/signup`
 ```json
 Body:     { "name": "string", "restaurantName": "string", "email": "string", "password": "string" }
-Response: { "token": "string", "success": true }
+Response: { "TOKEN_KEY": "string", "success": true }
 ```
 
 #### POST `/api/auth/login`
 ```json
 Body:     { "email": "string", "password": "string" }
-Response: { "token": "string", "success": true, "user": { "id", "name", "role" } }
+Response: { "TOKEN_KEY": "string", "success": true, "user": { "id", "name", "role" } }
 ```
 
 ---

@@ -3,12 +3,11 @@ import {
   LayoutDashboard, Box, Utensils, Trash2,
   ClipboardList, LogOut, Menu, X
 } from 'lucide-react';
-import { Link, useLocation, Outlet } from "react-router";
+import { Link, useLocation, Outlet, Navigate } from "react-router";
 import NotificationBell from '../notifications/NotificationBell';
-// import {  } from "react-router-dom";
+import { removeToken, getToken } from '../../services/axiosAuth';
 
 const AdminLayout = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -21,12 +20,14 @@ const AdminLayout = () => {
   ];
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+
+  if (!getToken()) return <Navigate to="/login" replace />;
+
   const handleLogout = () => {
-    // Clear JWT token and any other user data from localStorage or context
-    localStorage.removeItem('token');
-    // Redirect to login page
+    removeToken();
     window.location.href = '/login';
-  }
+  };
+
 
   return (
     <div className="flex min-h-screen bg-slate-50">
