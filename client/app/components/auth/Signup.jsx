@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from "react-router"; // or "react-router-dom"
-import { signupUser } from '../../services/axiosAuth';
+import { signupUser } from '../../../services/axiosAuth';
 
 const SignupPage = () => {
   const navigate = useNavigate();

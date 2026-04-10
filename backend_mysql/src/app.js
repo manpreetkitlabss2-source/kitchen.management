@@ -9,6 +9,8 @@ const pool = require('./config/db');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const batchRoutes = require('./routes/batchRoutes');
+const userRoutes = require('./routes/userRoutes');
 const { setupDatabase } = require('./config/tables');
 
 const app = express();
@@ -23,6 +25,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api', inventoryRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/batches', batchRoutes);
+app.use('/api/users', userRoutes);
+
+// Start server
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

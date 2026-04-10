@@ -9,6 +9,9 @@ export default [
     route("consumption", "components/dashboard/ConsumptionPage.jsx"),
     route("waste", "components/dashboard/WasteManagementPage.jsx"),
     route("notifications", "components/notifications/NotificationsPage.jsx"),
+    route("batches", "components/batch/BatchesPage.jsx"),
+    route("users", "components/dashboard/UserManagementPage.jsx"),
+    route("profile", "components/dashboard/ProfilePage.jsx"),
   ]),
 
 

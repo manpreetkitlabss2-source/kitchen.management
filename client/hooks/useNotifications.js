@@ -5,7 +5,7 @@ import {
   scanNotifications,
   markNotificationRead,
   markAllNotificationsRead
-} from "../app/services/notifications";
+} from "../services/notifications";
 
 export function useNotifications(initialLimit = 20) {
   const [data, setData] = useState([]);

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { fetchWasteLogs, createWasteLogs } from "../app/services/dashboard";
+import { fetchWasteLogs, createWasteLogs } from "../services/dashboard";
 
 export function useWaste(initialLimit = 10) {
   const [data, setData] = useState([]);

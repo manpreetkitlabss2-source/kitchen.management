@@ -37,6 +37,10 @@ coverage/
 
 .vite/
 
+# React Router generated types (build artifact)
+
+.react-router/
+
 # Editor directories and files
 
 .vscode/

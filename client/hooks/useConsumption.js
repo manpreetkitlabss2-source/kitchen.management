@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { fetchConsumptionLogs, prepareDish } from "../app/services/dashboard";
+import { fetchConsumptionLogs, prepareDish } from "../services/dashboard";
 
 export function useConsumption(initialLimit = 10) {
   const [data, setData] = useState([]);

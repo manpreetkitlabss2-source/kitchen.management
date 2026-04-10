@@ -1,30 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Box, Utensils, Trash2,
-  ClipboardList, LogOut, Menu, X
+  ClipboardList, LogOut, Menu, X, Users, UserCircle
 } from 'lucide-react';
-import { Link, useLocation, Outlet, Navigate } from "react-router";
+import { Link, useLocation, Outlet, useNavigate } from "react-router";
 import NotificationBell from '../notifications/NotificationBell';
-import { removeToken, getToken } from '../../services/axiosAuth';
+import { getToken, removeToken } from '../../../services/axiosAuth';
+import { can, removeRole, getRole } from '../../../utils/permissions';
 
 const AdminLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/' },
-    { id: 'ingredients', label: 'Ingredients', icon: <Box size={20} />, path: '/ingredients' },
-    { id: 'recipes', label: 'Recipes', icon: <Utensils size={20} />, path: '/recipes' },
-    { id: 'logs', label: 'Consumption', icon: <ClipboardList size={20} />, path: '/consumption' },
-    { id: 'waste', label: 'Waste Management', icon: <Trash2 size={20} />, path: '/waste' },
+  const allMenuItems = [
+    { id: 'dashboard',   label: 'Dashboard',        icon: <LayoutDashboard size={20} />, path: '/',            permission: 'dashboard:read' },
+    { id: 'ingredients', label: 'Ingredients',       icon: <Box size={20} />,            path: '/ingredients',  permission: 'inventory:read' },
+    { id: 'recipes',     label: 'Recipes',           icon: <Utensils size={20} />,       path: '/recipes',      permission: 'recipe:read' },
+    { id: 'logs',        label: 'Consumption',       icon: <ClipboardList size={20} />,  path: '/consumption',  permission: 'consumption:read' },
+    { id: 'waste',       label: 'Waste Management',  icon: <Trash2 size={20} />,         path: '/waste',        permission: 'waste:read' },
+    { id: 'batches',     label: 'Batches',           icon: <ClipboardList size={20} />,  path: '/batches',      permission: 'batch:read' },
+    { id: 'users',       label: 'User Management',   icon: <Users size={20} />,          path: '/users',        permission: 'user:create' },
   ];
+
+  const menuItems = allMenuItems.filter(item => can(item.permission));
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
-  if (!getToken()) return <Navigate to="/login" replace />;
+  useEffect(() => {
+    if (!getToken()) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    // If current path is not in the allowed menu, redirect to first allowed page
+    const isAllowed = location.pathname === '/profile' ||
+      menuItems.some(item =>
+        item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)
+      );
+    if (!isAllowed && menuItems.length > 0) {
+      navigate(menuItems[0].path, { replace: true });
+    }
+  }, [location.pathname]);
 
   const handleLogout = () => {
     removeToken();
+    removeRole();
     window.location.href = '/login';
   };
 
@@ -87,7 +107,12 @@ const AdminLayout = () => {
       {/* --- Main Content --- */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Desktop Header Bar */}
-        <header className="hidden lg:flex bg-white border-b border-slate-200 px-8 py-3 items-center justify-end sticky top-0 z-30">
+        <header className="hidden lg:flex bg-white border-b border-slate-200 px-8 py-3 items-center justify-end gap-4 sticky top-0 z-30">
+          <Link to="/profile" className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+              <span className="text-sm font-bold text-emerald-600">{getRole()?.charAt(0).toUpperCase()}</span>
+            </div>
+          </Link>
           <NotificationBell />
         </header>
 

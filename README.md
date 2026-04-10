@@ -109,7 +109,7 @@ Kitchen Pro solves all of these with automated deduction, waste logging, thresho
 ```
 Client (React)
   └── /client/hooks/          ← Custom hooks (local state, no global store for data)
-  └── /client/app/services/   ← Axios API clients
+  └── /client/services/   ← Axios API clients
   └── /client/app/components/ ← Page components consume hooks only
 
 Backend (Express)

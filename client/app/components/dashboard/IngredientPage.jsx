@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GlobalTable } from "../utils/GlobalTable";
+import DataGrid from "../utils/DataGrid";
 import { FloatingFormCard } from "../utils/FloatingFormCard";
 import { useIngredients } from "../../../hooks/useIngredients";
 
@@ -7,6 +7,7 @@ const IngredientPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState(null);
+  const [limit, setLimit] = useState(10);
 
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -22,16 +23,16 @@ const IngredientPage = () => {
     minThreshold: ''
   });
 
-  const { data: ingredients, loading, error, fetch, add, update, page, totalPages } = useIngredients();
+  const { data: ingredients, loading, error, fetch, add, update, page, totalPages, total } = useIngredients();
 
   useEffect(() => {
-    fetch(1);
+    fetch(1, limit);
   }, []);
 
   const lowStockItems = ingredients.filter(
     (ing) => ing.current_stock > 0 && ing.current_stock < ing.threshold_value
   ).length;
-  const totalItems = ingredients.length;
+  const totalItems = total || ingredients.length;
   const outOfStockItems = ingredients.filter(item => Number(item.current_stock) <= 0).length;
 
   const handleEditClick = (item) => {
@@ -57,6 +58,7 @@ const IngredientPage = () => {
       });
       alert("Ingredient updated successfully");
       setIsEditFormOpen(false);
+      fetch(page, limit);
     } catch (err) {
       alert("Failed to update ingredient");
     }
@@ -79,39 +81,63 @@ const IngredientPage = () => {
       setFormData({ name: '', unit: 'kg', minThreshold: '', currentStock: 0 });
       setIsFormOpen(false);
       alert("Ingredient added successfully!");
+      fetch(1, limit);
     } catch (err) {
       alert("Failed to save ingredient.");
     }
   };
 
-  const columns = ["Name", "Unit", "Stock Level", "Threshold", "Status", "Actions"];
-
-  const tableData = ingredients.map(item => ({
-    name: item.name,
-    unit: item.unit,
-    stock: item.current_stock,
-    threshold: item.threshold_value,
-    status: (
-      <span className={`px-2 py-1 rounded text-xs font-bold ${item.current_stock <= 0
-        ? "text-red-700 bg-red-100"
-        : item.current_stock <= item.threshold_value
-          ? "text-orange-600 bg-orange-50"
-          : "text-emerald-600 bg-emerald-50"
-        }`}>
-        {item.current_stock <= 0 ? "Out of Stock" : item.current_stock <= item.threshold_value ? "Low Stock" : "In Stock"}
-      </span>
-    ),
-    actions: (
-      <div className="flex items-center gap-2">
+  const columns = [
+    {
+      key: "name",
+      label: "Name",
+      sortable: true,
+    },
+    {
+      key: "unit",
+      label: "Unit",
+      sortable: true,
+    },
+    {
+      key: "current_stock",
+      label: "Stock Level",
+      sortable: true,
+    },
+    {
+      key: "threshold_value",
+      label: "Threshold",
+      sortable: true,
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: false,
+      render: (item) => (
+        <span className={`px-2 py-1 rounded text-xs font-bold ${item.current_stock <= 0
+          ? "text-red-700 bg-red-100"
+          : item.current_stock <= item.threshold_value
+            ? "text-orange-600 bg-orange-50"
+            : "text-emerald-600 bg-emerald-50"
+          }`}>
+          {item.current_stock <= 0 ? "Out of Stock" : item.current_stock <= item.threshold_value ? "Low Stock" : "In Stock"}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      sortable: false,
+      align: "right",
+      render: (item) => (
         <button
           onClick={() => handleEditClick(item)}
           className="px-3 py-1 text-xs font-semibold rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
         >
           Edit
         </button>
-      </div>
-    )
-  }));
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -139,33 +165,25 @@ const IngredientPage = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
         </div>
       ) : (
-        <>
-          <GlobalTable
-            title="Ingredient Inventory"
-            columns={columns}
-            data={tableData}
-            onAddClick={() => setIsFormOpen(true)}
-          />
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-3 pt-2">
-              <button
-                onClick={() => fetch(page - 1)}
-                disabled={page <= 1}
-                className="px-3 py-1 text-sm rounded border border-slate-300 disabled:opacity-40 hover:bg-slate-50"
-              >
-                Prev
-              </button>
-              <span className="text-sm text-slate-600">Page {page} of {totalPages}</span>
-              <button
-                onClick={() => fetch(page + 1)}
-                disabled={page >= totalPages}
-                className="px-3 py-1 text-sm rounded border border-slate-300 disabled:opacity-40 hover:bg-slate-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
+        <DataGrid
+          title="Ingredient Inventory"
+          columns={columns}
+          data={ingredients}
+          keyField="_id"
+          onAddClick={() => setIsFormOpen(true)}
+          pagination={{
+            page,
+            totalPages,
+            total: totalItems,
+            limit
+          }}
+          onPageChange={(newPage) => fetch(newPage, limit)}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            fetch(1, newLimit);
+          }}
+          loading={loading}
+        />
       )}
 
       <FloatingFormCard

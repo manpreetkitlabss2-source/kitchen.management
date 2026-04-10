@@ -1,3 +1,9 @@
 # amazonQ-rules
-
 .amazonq/
+
+# PDF and generated docs
+*.pdf
+
+# Local markdown guides (not part of source)
+TABLE_UNIFICATION_GUIDE.md
+BRD.summery.md

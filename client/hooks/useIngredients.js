@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { fetchIngredients, createIngredient, updateIngredient } from "../app/services/dashboard";
+import { fetchIngredients, createIngredient, updateIngredient } from "../services/dashboard";
 
 export function useIngredients(initialLimit = 10) {
   const [data, setData] = useState([]);

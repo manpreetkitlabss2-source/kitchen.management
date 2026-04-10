@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowDownCircle, Info, Plus, Trash2 } from "lucide-react";
-import { GlobalTable } from "../utils/GlobalTable";
+import DataGrid from "../utils/DataGrid";
 import { FloatingFormCard } from "../utils/FloatingFormCard";
 import { useConsumption } from "../../../hooks/useConsumption";
 import { useIngredients } from "../../../hooks/useIngredients";
@@ -11,13 +11,14 @@ const ConsumptionPage = () => {
   const [mode, setMode] = useState('recipe');
   const [selectedRecipeId, setSelectedRecipeId] = useState("");
   const [consumptionItems, setConsumptionItems] = useState([]);
+  const [limit, setLimit] = useState(10);
 
-  const { data: consumptionLogs, loading, fetch: fetchConsumptionLogs, prepare, page, totalPages } = useConsumption();
+  const { data: consumptionLogs, loading, fetch: fetchConsumptionLogs, prepare, page, totalPages, total } = useConsumption();
   const { data: ingredients, fetch: fetchIngredients } = useIngredients();
   const { data: recipes, fetch: fetchRecipes } = useRecipes();
 
   useEffect(() => {
-    fetchConsumptionLogs(1);
+    fetchConsumptionLogs(1, limit);
     fetchRecipes(1);
     fetchIngredients(1);
   }, []);
@@ -66,6 +67,7 @@ const ConsumptionPage = () => {
       alert("Stock updated successfully!");
       handleModeChange('recipe');
       setIsFormOpen(false);
+      fetchConsumptionLogs(1, limit);
     } catch (err) {
       alert(err.response?.data?.error || "Error processing consumption");
     }
@@ -75,19 +77,42 @@ const ConsumptionPage = () => {
   const logsToday = consumptionLogs.filter(log => log.created_at?.startsWith(today)).length;
   const totalVolume = consumptionLogs.reduce((acc, curr) => acc + (curr.quantity || 0), 0);
 
-  const columns = ["Date", "Item / Recipe", "Ingredient", "Qty Used", "Type"];
-
-  const tableData = consumptionLogs.map((log) => ({
-    date: new Date(log.created_at).toLocaleDateString(),
-    item: log.recipe_id?.name || "Manual Entry",
-    ingredient: log.ingredient_id?.name || "Unknown",
-    quantity: `${log.quantity} ${log.ingredient_id?.unit || ""}`,
-    type: (
-      <span className={`px-2 py-1 rounded text-xs font-bold ${log.recipe_id ? "text-blue-600 bg-blue-50" : "text-amber-600 bg-amber-50"}`}>
-        {log.recipe_id ? "Recipe" : "Manual"}
-      </span>
-    )
-  }));
+  const columns = [
+    {
+      key: "created_at",
+      label: "Date",
+      sortable: true,
+      render: (log) => new Date(log.created_at).toLocaleDateString()
+    },
+    {
+      key: "recipe_id",
+      label: "Item / Recipe",
+      sortable: false,
+      render: (log) => log.recipe_id?.name || "Manual Entry"
+    },
+    {
+      key: "ingredient_id",
+      label: "Ingredient",
+      sortable: false,
+      render: (log) => log.ingredient_id?.name || "Unknown"
+    },
+    {
+      key: "quantity",
+      label: "Qty Used",
+      sortable: true,
+      render: (log) => `${log.quantity} ${log.ingredient_id?.unit || ""}`
+    },
+    {
+      key: "type",
+      label: "Type",
+      sortable: false,
+      render: (log) => (
+        <span className={`px-2 py-1 rounded text-xs font-bold ${log.recipe_id ? "text-blue-600 bg-blue-50" : "text-amber-600 bg-amber-50"}`}>
+          {log.recipe_id ? "Recipe" : "Manual"}
+        </span>
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -113,33 +138,25 @@ const ConsumptionPage = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
         </div>
       ) : (
-        <>
-          <GlobalTable
-            title="Consumption History"
-            columns={columns}
-            data={tableData}
-            onAddClick={() => setIsFormOpen(true)}
-          />
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-3 pt-2">
-              <button
-                onClick={() => fetchConsumptionLogs(page - 1)}
-                disabled={page <= 1}
-                className="px-3 py-1 text-sm rounded border border-slate-300 disabled:opacity-40 hover:bg-slate-50"
-              >
-                Prev
-              </button>
-              <span className="text-sm text-slate-600">Page {page} of {totalPages}</span>
-              <button
-                onClick={() => fetchConsumptionLogs(page + 1)}
-                disabled={page >= totalPages}
-                className="px-3 py-1 text-sm rounded border border-slate-300 disabled:opacity-40 hover:bg-slate-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
+        <DataGrid
+          title="Consumption History"
+          columns={columns}
+          data={consumptionLogs}
+          keyField="_id"
+          onAddClick={() => setIsFormOpen(true)}
+          pagination={{
+            page,
+            totalPages,
+            total: total || consumptionLogs.length,
+            limit
+          }}
+          onPageChange={(newPage) => fetchConsumptionLogs(newPage, limit)}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            fetchConsumptionLogs(1, newLimit);
+          }}
+          loading={loading}
+        />
       )}
 
       <FloatingFormCard

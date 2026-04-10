@@ -1,24 +1,25 @@
 import { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import { Info } from "lucide-react";
-import { GlobalTable } from "../utils/GlobalTable";
+import DataGrid from "../utils/DataGrid";
 import { FloatingFormCard } from "../utils/FloatingFormCard";
 import { useWaste } from "../../../hooks/useWaste";
 import { useIngredients } from "../../../hooks/useIngredients";
 
 const WasteManagementPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [limit, setLimit] = useState(10);
   const [formData, setFormData] = useState({
     ingredientId: "",
     quantity: "",
     reason: ""
   });
 
-  const { data: wasteLogs, loading, fetch: fetchWaste, log: logWaste, page, totalPages } = useWaste();
+  const { data: wasteLogs, loading, fetch: fetchWaste, log: logWaste, page, totalPages, total } = useWaste();
   const { data: ingredients, fetch: fetchIngredients } = useIngredients();
 
   useEffect(() => {
-    fetchWaste(1);
+    fetchWaste(1, limit);
     fetchIngredients(1);
   }, []);
 
@@ -39,6 +40,7 @@ const WasteManagementPage = () => {
       alert("Waste logged successfully");
       setFormData({ ingredientId: "", quantity: "", reason: "" });
       setIsFormOpen(false);
+      fetchWaste(1, limit);
     } catch (err) {
       alert(err.response?.data?.message || "Failed to log waste");
     }
@@ -49,18 +51,36 @@ const WasteManagementPage = () => {
   const totalWaste = wasteLogs.reduce((acc, curr) => acc + (curr.quantity || 0), 0);
   const uniqueItems = new Set(wasteLogs.map((log) => log.ingredient_id?._id || log.ingredient_id)).size;
 
-  const columns = ["Date", "Ingredient", "Quantity", "Reason"];
-
-  const tableData = wasteLogs.map((log) => ({
-    date: new Date(log.created_at).toLocaleDateString(),
-    ingredient: log.ingredient_id?.name || "Unknown",
-    quantity: `${log.quantity} ${log.ingredient_id?.unit || ""}`,
-    reason: (
-      <span className="px-2 py-1 rounded text-xs font-bold text-red-600 bg-red-50">
-        {log.reason}
-      </span>
-    )
-  }));
+  const columns = [
+    {
+      key: "created_at",
+      label: "Date",
+      sortable: true,
+      render: (log) => new Date(log.created_at).toLocaleDateString()
+    },
+    {
+      key: "ingredient_id",
+      label: "Ingredient",
+      sortable: false,
+      render: (log) => log.ingredient_id?.name || "Unknown"
+    },
+    {
+      key: "quantity",
+      label: "Quantity",
+      sortable: true,
+      render: (log) => `${log.quantity} ${log.ingredient_id?.unit || ""}`
+    },
+    {
+      key: "reason",
+      label: "Reason",
+      sortable: true,
+      render: (log) => (
+        <span className="px-2 py-1 rounded text-xs font-bold text-red-600 bg-red-50">
+          {log.reason}
+        </span>
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -86,33 +106,25 @@ const WasteManagementPage = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500" />
         </div>
       ) : (
-        <>
-          <GlobalTable
-            title="Waste History"
-            columns={columns}
-            data={tableData}
-            onAddClick={() => setIsFormOpen(true)}
-          />
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-3 pt-2">
-              <button
-                onClick={() => fetchWaste(page - 1)}
-                disabled={page <= 1}
-                className="px-3 py-1 text-sm rounded border border-slate-300 disabled:opacity-40 hover:bg-slate-50"
-              >
-                Prev
-              </button>
-              <span className="text-sm text-slate-600">Page {page} of {totalPages}</span>
-              <button
-                onClick={() => fetchWaste(page + 1)}
-                disabled={page >= totalPages}
-                className="px-3 py-1 text-sm rounded border border-slate-300 disabled:opacity-40 hover:bg-slate-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
+        <DataGrid
+          title="Waste History"
+          columns={columns}
+          data={wasteLogs}
+          keyField="_id"
+          onAddClick={() => setIsFormOpen(true)}
+          pagination={{
+            page,
+            totalPages,
+            total: total || wasteLogs.length,
+            limit
+          }}
+          onPageChange={(newPage) => fetchWaste(newPage, limit)}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            fetchWaste(1, newLimit);
+          }}
+          loading={loading}
+        />
       )}
 
       <FloatingFormCard

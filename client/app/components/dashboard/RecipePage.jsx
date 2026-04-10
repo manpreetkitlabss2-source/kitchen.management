@@ -1,22 +1,23 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { GlobalTable } from "../utils/GlobalTable";
+import DataGrid from "../utils/DataGrid";
 import { FloatingFormCard } from "../utils/FloatingFormCard";
 import { useRecipes } from "../../../hooks/useRecipes";
 import { useIngredients } from "../../../hooks/useIngredients";
 
 const RecipePage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [limit, setLimit] = useState(10);
   const [formData, setFormData] = useState({
     name: '',
     recipeIngredients: [{ ingredientId: '', quantity: '' }]
   });
 
-  const { data: recipes, loading, fetch: fetchRecipes, add: addRecipe, page, totalPages } = useRecipes();
+  const { data: recipes, loading, fetch: fetchRecipes, add: addRecipe, page, totalPages, total } = useRecipes();
   const { data: ingredientsList, fetch: fetchIngredients } = useIngredients();
 
   useEffect(() => {
-    fetchRecipes(1);
+    fetchRecipes(1, limit);
     fetchIngredients(1);
   }, []);
 
@@ -50,23 +51,41 @@ const RecipePage = () => {
       setFormData({ name: '', recipeIngredients: [{ ingredientId: '', quantity: '' }] });
       setIsFormOpen(false);
       alert("Recipe created successfully!");
+      fetchRecipes(1, limit);
     } catch (err) {
       alert("Error saving recipe");
     }
   };
 
-  const columns = ["Recipe Name", "Total Ingredients", "Complexity", "Status"];
-
-  const tableData = recipes.map(recipe => ({
-    name: recipe.name,
-    ingredientsCount: `${recipe.ingredients?.length || 0} items`,
-    complexity: (
-      <span className="text-slate-600 bg-slate-100 px-2 py-1 rounded text-xs font-medium">
-        {(recipe.ingredients?.length || 0) > 5 ? 'High' : 'Standard'}
-      </span>
-    ),
-    status: <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-xs font-bold">Active</span>
-  }));
+  const columns = [
+    {
+      key: "name",
+      label: "Recipe Name",
+      sortable: true,
+    },
+    {
+      key: "ingredients_count",
+      label: "Total Ingredients",
+      sortable: true,
+      render: (recipe) => `${recipe.ingredients?.length || 0} items`
+    },
+    {
+      key: "complexity",
+      label: "Complexity",
+      sortable: false,
+      render: (recipe) => (
+        <span className="text-slate-600 bg-slate-100 px-2 py-1 rounded text-xs font-medium">
+          {(recipe.ingredients?.length || 0) > 5 ? 'High' : 'Standard'}
+        </span>
+      )
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: false,
+      render: () => <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-xs font-bold">Active</span>
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -86,33 +105,25 @@ const RecipePage = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
         </div>
       ) : (
-        <>
-          <GlobalTable
-            title="Recipe Menu"
-            columns={columns}
-            data={tableData}
-            onAddClick={() => setIsFormOpen(true)}
-          />
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-3 pt-2">
-              <button
-                onClick={() => fetchRecipes(page - 1)}
-                disabled={page <= 1}
-                className="px-3 py-1 text-sm rounded border border-slate-300 disabled:opacity-40 hover:bg-slate-50"
-              >
-                Prev
-              </button>
-              <span className="text-sm text-slate-600">Page {page} of {totalPages}</span>
-              <button
-                onClick={() => fetchRecipes(page + 1)}
-                disabled={page >= totalPages}
-                className="px-3 py-1 text-sm rounded border border-slate-300 disabled:opacity-40 hover:bg-slate-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
+        <DataGrid
+          title="Recipe Menu"
+          columns={columns}
+          data={recipes}
+          keyField="_id"
+          onAddClick={() => setIsFormOpen(true)}
+          pagination={{
+            page,
+            totalPages,
+            total: total || recipes.length,
+            limit
+          }}
+          onPageChange={(newPage) => fetchRecipes(newPage, limit)}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            fetchRecipes(1, newLimit);
+          }}
+          loading={loading}
+        />
       )}
 
       <FloatingFormCard

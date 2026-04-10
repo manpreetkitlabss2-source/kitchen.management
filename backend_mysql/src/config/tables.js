@@ -8,9 +8,11 @@ const createUsersTable = async () => {
             restaurantName VARCHAR(255) NOT NULL,
             email VARCHAR(255) NOT NULL UNIQUE,
             password VARCHAR(255) NOT NULL,
-            role ENUM('admin') DEFAULT 'admin',
+            role ENUM('admin', 'manager', 'chef', 'inventory_staff') DEFAULT 'admin',
+            created_by INT NULL,
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
         )
     `);
     console.log("✅ Users table ready");
@@ -99,6 +101,32 @@ const createNotificationsTable = async () => {
     console.log("✅ Notifications table ready");
 };
 
+const createBatchTable = async () => {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS ingredient_batches (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            ingredient_id INT NOT NULL,
+            quantity DECIMAL(10,2) NOT NULL DEFAULT 0,
+            expiry_date DATE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE CASCADE,
+            
+            INDEX idx_user_id (user_id),
+            INDEX idx_ingredient_id (ingredient_id),
+            INDEX idx_batch_ingredient (ingredient_id),
+            INDEX idx_batch_expiry (expiry_date),
+            INDEX idx_user_expiry (user_id, expiry_date),
+            CONSTRAINT fk_batch_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE CASCADE,
+            CONSTRAINT fk_batch_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE        
+        )`
+    );
+    console.log("✅ Ingredient Batches table ready");
+}
+
 
 const getAllTables = async () => {
     const test = await pool.query(`
@@ -109,22 +137,43 @@ const getAllTables = async () => {
 
 const deleteAllTables = async () => {
     const test = await pool.query(`
-        DROP TABLE IF EXISTS logs, notifications, recipe_ingredients, recipes, ingredients, users
+        DROP TABLE IF EXISTS ingredient_batches, logs, notifications, recipe_ingredients, recipes, ingredients, users
     `);
     console.log("✅ All tables deleted", test);
+};
+
+const migrateUsersTable = async () => {
+    // Shrink ENUM to remove viewer + ensure created_by exists
+    await pool.query(`
+        ALTER TABLE users
+        MODIFY COLUMN role ENUM('admin','manager','chef','inventory_staff') NOT NULL DEFAULT 'admin'
+    `).catch(() => {});
+
+    const [cols] = await pool.query(`
+        SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'created_by'
+    `);
+    if (cols.length === 0) {
+        await pool.query(`
+            ALTER TABLE users
+            ADD COLUMN created_by INT NULL,
+            ADD CONSTRAINT fk_users_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+        `);
+        console.log("✅ users.created_by column added");
+    }
 };
 
 // MASTER RUNNER
 const setupDatabase = async () => {
     try {
         console.log("--- Starting Sequential Setup ---");
-        
-        // Sequential execution is critical because of Foreign Key dependencies
+
         await createUsersTable();
-        await createIngredientsTable(); 
+        await createIngredientsTable();
         await createRecipesTables();
         await createLogsTable();
         await createNotificationsTable();
+        await createBatchTable();
 
         console.log("🚀 Database fully initialized and secured!");
     } catch (err) {

@@ -1,30 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const invCtrl = require('../controllers/inventoryController');
-const { protect, isAdmin } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/rbacMiddleware');
 
-// All routes here are protected for Admins
-router.use(protect, isAdmin);
+// All routes require authentication
+router.use(protect);
 
 // Ingredients
-router.get('/ingredients', invCtrl.getIngredients);
-router.put('/ingredients', invCtrl.editIngredients);
-router.post('/ingredients', invCtrl.addIngredient);
+router.get('/ingredients',  authorize('inventory:read'),  invCtrl.getIngredients);
+router.post('/ingredients', authorize('inventory:write'), invCtrl.addIngredient);
+router.put('/ingredients',  authorize('inventory:write'), invCtrl.editIngredients);
 
+// Recipes
+router.get('/recipe',  authorize('recipe:read'),  invCtrl.getRecipe);
+router.post('/recipe', authorize('recipe:write'), invCtrl.addRecipe);
 
-// Recipes & Consumption
-router.post('/recipe', invCtrl.addRecipe);
-router.get('/recipe', invCtrl.getRecipe);
-
-// Recipes & Consumption
-router.post('/consumption/prepare', invCtrl.prepareDish);
-router.get('/consumption', invCtrl.servedDishes);
+// Consumption
+router.get('/consumption',         authorize('consumption:read'),   invCtrl.servedDishes);
+router.post('/consumption/prepare', authorize('consumption:create'), invCtrl.prepareDish);
 
 // Waste
-router.get('/waste', invCtrl.getLogWaste);
-router.post('/waste', invCtrl.logWaste);
+router.get('/waste',  authorize('waste:read'),   invCtrl.getLogWaste);
+router.post('/waste', authorize('waste:create'), invCtrl.logWaste);
 
 // Dashboard
-router.get('/dashboard', invCtrl.getDashboard);
+router.get('/dashboard', authorize('dashboard:read'), invCtrl.getDashboard);
 
 module.exports = router;
