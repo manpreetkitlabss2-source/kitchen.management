@@ -33,7 +33,7 @@ const ProfilePage = () => {
   const isAdmin = currentRole === 'admin';
 
   useEffect(() => {
-    api.get('/auth/me')
+    api.get('/api/auth/me')
       .then(res => setProfile(res.data))
       .catch(() => setError('Failed to load profile'))
       .finally(() => setLoading(false));

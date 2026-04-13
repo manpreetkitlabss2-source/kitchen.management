@@ -66,7 +66,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        const isLoginRequest = error.config?.url?.includes('/auth/login');
+        const isLoginRequest = error.config?.url?.includes('/api/auth/login');
 
         if (error.response && error.response.status === 401 && !isLoginRequest) {
             console.log("Unauthorized - logging out");
@@ -85,7 +85,7 @@ api.interceptors.response.use(
 // LOGIN
 export async function loginUser({ email, password }) {
     try {
-        const response = await api.post("/auth/login", {
+        const response = await api.post("/api/auth/login", {
             email,
             password,
         });
@@ -111,7 +111,7 @@ export async function loginUser({ email, password }) {
 // SIGNUP
 export async function signupUser({ name, restaurantName, email, password }) {
     try {
-        const response = await api.post("/auth/signup", {
+        const response = await api.post("/api/auth/signup", {
             name, restaurantName, email, password,
         });
 
@@ -142,7 +142,7 @@ export function logoutUser() {
 
 export async function fetchUserProfile() {
     try {
-        const response = await api.get("/profile");
+        const response = await api.get("/api/auth/me");
         return response.data;
     } catch (error) {
         console.error("Profile fetch error:", error);

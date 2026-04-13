@@ -1,8 +1,8 @@
 import api from './axiosAuth';
 
 const BATCH_ENDPOINTS = {
-  BASE: '/batches',
-  BY_ID: (id) => `/batches/${id}`,
+  BASE: '/api/batches',
+  BY_ID: (id) => `/api/batches/${id}`,
 };
 
 /**
