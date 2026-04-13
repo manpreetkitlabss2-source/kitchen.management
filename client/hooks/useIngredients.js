@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { fetchIngredients, createIngredient, updateIngredient } from "../services/dashboard";
+import { fetchIngredients, createIngredient, updateIngredient, deleteIngredient } from "../services/dashboard";
 
 export function useIngredients(initialLimit = 10) {
   const [data, setData] = useState([]);
@@ -8,11 +8,11 @@ export function useIngredients(initialLimit = 10) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetch = useCallback(async (nextPage = 1) => {
+  const fetch = useCallback(async (nextPage = 1, limit = initialLimit) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchIngredients({ page: nextPage, limit: initialLimit });
+      const res = await fetchIngredients({ page: nextPage, limit });
       setData(res.data);
       setTotal(res.total);
       setPage(res.page);
@@ -35,10 +35,15 @@ export function useIngredients(initialLimit = 10) {
     return res;
   }, [fetch, page]);
 
+  const remove = useCallback(async (id) => {
+    await deleteIngredient(id);
+    await fetch(page);
+  }, [fetch, page]);
+
   return {
     data, page, total, limit: initialLimit,
     loading, error,
-    fetch, add, update,
+    fetch, add, update, remove,
     totalPages: Math.ceil(total / initialLimit),
   };
 }

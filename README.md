@@ -617,6 +617,24 @@ Password: admin123
 
 ---
 
+## Docker (Backend)
+
+Requires [Docker](https://www.docker.com/) installed.
+
+```bash
+# Build the image
+docker build -t kitchen-pro-backend ./backend_mysql
+
+# Run the container
+docker run -p 5000:5000 --env-file ./backend_mysql/.env kitchen-pro-backend
+```
+
+- `.env` is loaded at runtime — never baked into the image
+- Server is available at `http://localhost:5000`
+- Stop the container with `Ctrl+C`
+
+---
+
 ## Notification Behaviour
 
 The notification system uses a scan-on-demand model:

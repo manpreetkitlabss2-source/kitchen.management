@@ -2,10 +2,10 @@ const pool = require('../config/db');
 
 class NotificationService {
 
-  async scanAndNotify(user_id) {
+  async scanAndNotify(user_id, restaurant_id) {
     const [ingredients] = await pool.query(
-      'SELECT * FROM ingredients WHERE user_id = ?',
-      [user_id]
+      'SELECT * FROM ingredients WHERE restaurant_id = ? AND deleted_at IS NULL',
+      [restaurant_id]
     );
 
     const checks = ingredients.map(async (ing) => {
@@ -17,8 +17,8 @@ class NotificationService {
 
       if (!type) {
         await pool.query(
-          'DELETE FROM notifications WHERE ingredient_id = ? AND user_id = ?',
-          [ing.id, user_id]
+          'DELETE FROM notifications WHERE ingredient_id = ? AND restaurant_id = ?',
+          [ing.id, restaurant_id]
         );
         return;
       }
@@ -28,39 +28,34 @@ class NotificationService {
         : `${ing.name} is running low (${ing.current_stock} ${ing.unit} remaining, threshold: ${ing.threshold_value})`;
 
       await pool.query(`
-        INSERT INTO notifications (user_id, ingredient_id, type, message, is_read, created_at)
-        VALUES (?, ?, ?, ?, false, NOW())
-        ON DUPLICATE KEY UPDATE
-          is_read = false,
-          message = VALUES(message)
-      `, [user_id, ing.id, type, message]);
+        INSERT INTO notifications (restaurant_id, user_id, ingredient_id, type, message, is_read, created_at)
+        VALUES (?, ?, ?, ?, ?, false, NOW())
+        ON DUPLICATE KEY UPDATE is_read = false, message = VALUES(message)
+      `, [restaurant_id, user_id, ing.id, type, message]);
     });
 
     await Promise.all(checks);
   }
 
-  async getNotifications({ page = 1, limit = 20, user_id } = {}) {
+  async getNotifications({ page = 1, limit = 20, restaurant_id } = {}) {
     const offset = (page - 1) * limit;
 
     const [rows] = await pool.query(`
       SELECT n.id, n.type, n.message, n.is_read, n.created_at,
              JSON_OBJECT(
-               'id', i.id,
-               'name', i.name,
-               'unit', i.unit,
-               'current_stock', i.current_stock,
-               'threshold_value', i.threshold_value
+               'id', i.id, 'name', i.name, 'unit', i.unit,
+               'current_stock', i.current_stock, 'threshold_value', i.threshold_value
              ) as ingredient_id
       FROM notifications n
       JOIN ingredients i ON n.ingredient_id = i.id
-      WHERE n.user_id = ?
+      WHERE n.restaurant_id = ?
       ORDER BY n.created_at DESC
       LIMIT ? OFFSET ?
-    `, [user_id, Number(limit), Number(offset)]);
+    `, [restaurant_id, Number(limit), Number(offset)]);
 
     const [[{ total }]] = await pool.query(
-      'SELECT COUNT(*) as total FROM notifications WHERE user_id = ?',
-      [user_id]
+      'SELECT COUNT(*) as total FROM notifications WHERE restaurant_id = ?',
+      [restaurant_id]
     );
 
     const formattedData = rows.map(row => {
@@ -81,31 +76,25 @@ class NotificationService {
       };
     });
 
-    return {
-      data: formattedData || [],
-      page: Number(page),
-      limit: Number(limit),
-      total: Number(total) || 0
-    };
+    return { data: formattedData || [], page: Number(page), limit: Number(limit), total: Number(total) || 0 };
   }
 
-  async getUnreadCount(user_id) {
+  async getUnreadCount(restaurant_id) {
     const [[{ count }]] = await pool.query(
-      'SELECT COUNT(*) as count FROM notifications WHERE is_read = false AND user_id = ?',
-      [user_id]
+      'SELECT COUNT(*) as count FROM notifications WHERE is_read = false AND restaurant_id = ?',
+      [restaurant_id]
     );
     return { count: Number(count || 0) };
   }
 
-  async markAsRead(id, user_id) {
+  async markAsRead(id, restaurant_id) {
     const [result] = await pool.query(
-      'UPDATE notifications SET is_read = true WHERE id = ? AND user_id = ?',
-      [id, user_id]
+      'UPDATE notifications SET is_read = true WHERE id = ? AND restaurant_id = ?',
+      [id, restaurant_id]
     );
-
     if (result.affectedRows === 0) throw new Error('Notification not found');
 
-    const [[n]] = await pool.query('SELECT * FROM notifications WHERE id = ? AND user_id = ?', [id, user_id]);
+    const [[n]] = await pool.query('SELECT * FROM notifications WHERE id = ? AND restaurant_id = ?', [id, restaurant_id]);
     return {
       _id: String(n.id),
       type: n.type,
@@ -115,10 +104,10 @@ class NotificationService {
     };
   }
 
-  async markAllAsRead(user_id) {
+  async markAllAsRead(restaurant_id) {
     await pool.query(
-      'UPDATE notifications SET is_read = true WHERE is_read = false AND user_id = ?',
-      [user_id]
+      'UPDATE notifications SET is_read = true WHERE is_read = false AND restaurant_id = ?',
+      [restaurant_id]
     );
     return { success: true };
   }

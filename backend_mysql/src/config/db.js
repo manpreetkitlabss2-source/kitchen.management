@@ -18,7 +18,7 @@ const pool = mysql.createPool({
 // Test the connection
 pool.getConnection()
   .then(connection => {
-    console.log('MySQL Connected via cloud db');
+    console.log('MySQL Connected via aivencloud');
     connection.release();
   })
   .catch(err => console.log('MySQL Connection Error:', err));

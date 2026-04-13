@@ -5,10 +5,9 @@ const ROLE_KEY = 'user_role';
 
 const ROLES = {
   admin:           ['*'],
-  manager:         ['dashboard:read', 'inventory:read', 'inventory:write', 'recipe:read', 'recipe:write', 'consumption:read', 'consumption:create', 'waste:read', 'waste:create', 'notification:read', 'notification:write', 'user:create', 'batch:read', 'batch:write'],
-  chef:            ['recipe:read', 'consumption:read', 'consumption:create', 'inventory:read', 'batch:read', 'batch:write'],
+  manager:         ['dashboard:read', 'inventory:read', 'inventory:write', 'recipe:read', 'recipe:write', 'consumption:read', 'consumption:create', 'waste:read', 'waste:create', 'notification:read', 'notification:write', 'user:create', 'batch:read', 'batch:write', 'order:read', 'order:create'],
+  chef:            ['recipe:read', 'consumption:read', 'consumption:create', 'inventory:read', 'batch:read', 'batch:write', 'order:read', 'order:create'],
   inventory_staff: ['inventory:read', 'inventory:write', 'waste:read', 'waste:create', 'notification:read', 'batch:read'],
-
 };
 
 export function saveRole(role) {

@@ -8,11 +8,11 @@ export function useWaste(initialLimit = 10) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetch = useCallback(async (nextPage = 1) => {
+  const fetch = useCallback(async (nextPage = 1, limit = initialLimit) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWasteLogs({ page: nextPage, limit: initialLimit });
+      const res = await fetchWasteLogs({ page: nextPage, limit });
       setData(res.data);
       setTotal(res.total);
       setPage(res.page);

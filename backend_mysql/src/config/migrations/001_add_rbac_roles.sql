@@ -3,5 +3,5 @@
 -- Safe to run multiple times (MODIFY COLUMN is idempotent for ENUM extension).
 
 ALTER TABLE users
-  MODIFY COLUMN role ENUM('admin', 'manager', 'chef', 'inventory_staff', 'viewer')
+  MODIFY COLUMN role ENUM('admin', 'manager', 'chef', 'inventory_staff')
   NOT NULL DEFAULT 'admin';

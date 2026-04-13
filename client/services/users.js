@@ -10,7 +10,14 @@ export async function getUsers() {
   return response.data;
 }
 
-export async function deleteUser(id) {
+// Admin self-delete — hard deletes all data and deactivates account
+export async function selfDeleteAccount() {
+  const response = await api.delete('/users/me');
+  return response.data;
+}
+
+// Hard-delete a sub-user + all their data (admin/manager only)
+export async function hardDeleteUser(id) {
   const response = await api.delete(`/users/${id}`);
   return response.data;
 }

@@ -13,26 +13,26 @@ const authorize = (permission) => async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      return res.status(401).json({ message: 'Not authorized' });
+      return res.status(401).json({ message: 'Authentication required. Please log in.' });
     }
 
     const [[user]] = await pool.query(
-      'SELECT role FROM users WHERE id = ?',
+      'SELECT role, restaurant_id FROM users WHERE id = ? AND deleted_at IS NULL',
       [userId]
     );
 
     if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+      return res.status(401).json({ message: 'Your account no longer exists or has been deactivated.' });
     }
 
     if (!hasPermission(user.role, permission)) {
       return res.status(403).json({
-        message: `Access denied. Required permission: ${permission}`,
+        message: `You don't have permission to perform this action.`,
       });
     }
 
-    // Attach role to req for downstream use (optional, no overhead)
     req.user.role = user.role;
+    req.user.restaurantId = user.restaurant_id;
     next();
   } catch (error) {
     return res.status(500).json({ message: 'Authorization check failed' });

@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Trash2 } from 'lucide-react';
-import { createUser, getUsers, deleteUser } from '../../../services/users';
+import { Users, UserPlus, Trash2, AlertTriangle } from 'lucide-react';
+import { createUser, getUsers, hardDeleteUser } from '../../../services/users';
 import { getRole, can } from '../../../utils/permissions';
 
-// Roles each creator may assign — mirrors backend CREATABLE_ROLES
 const CREATABLE_ROLES = {
   admin:   ['manager', 'chef', 'inventory_staff'],
   manager: ['chef', 'inventory_staff'],
@@ -15,6 +14,13 @@ const ROLE_LABELS = {
   inventory_staff: 'Inventory Staff',
 };
 
+const roleBadgeClass = {
+  admin:           'bg-purple-100 text-purple-700',
+  manager:         'bg-blue-100 text-blue-700',
+  chef:            'bg-emerald-100 text-emerald-700',
+  inventory_staff: 'bg-orange-100 text-orange-700',
+};
+
 const defaultForm = { name: '', email: '', password: '', role: '' };
 
 const UserManagementPage = () => {
@@ -22,12 +28,16 @@ const UserManagementPage = () => {
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState(defaultForm);
-  const [toast, setToast] = useState(null); // { type: 'success'|'error', message }
+  const [toast, setToast] = useState(null);
+
+  // Hard-delete confirmation modal state
+  const [deleteTarget, setDeleteTarget] = useState(null); // user object
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const callerRole = getRole();
   const assignableRoles = CREATABLE_ROLES[callerRole] || [];
 
-  // If the caller cannot create users, render nothing
   if (!can('user:create')) {
     return (
       <div className="flex items-center justify-center py-20 text-slate-400 text-sm">
@@ -47,7 +57,7 @@ const UserManagementPage = () => {
       const res = await getUsers();
       setUsers(res.data || []);
     } catch {
-      // silent — list failure should not block the form
+      // silent
     } finally {
       setLoading(false);
     }
@@ -76,32 +86,104 @@ const UserManagementPage = () => {
     }
   };
 
-  const handleDelete = async (user) => {
-    if (!window.confirm(`Delete "${user.name}"? This cannot be undone.`)) return;
+  const openDeleteModal = (user) => {
+    setDeleteTarget(user);
+    setDeleteConfirmText('');
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteTarget(null);
+    setDeleteConfirmText('');
+  };
+
+  const handleHardDelete = async (e) => {
+    e.preventDefault();
+    if (deleteConfirmText !== deleteTarget.name) return;
+    setDeleteLoading(true);
     try {
-      await deleteUser(user.id);
-      showToast('success', `User "${user.name}" deleted`);
+      await hardDeleteUser(deleteTarget.id);
+      showToast('success', `User "${deleteTarget.name}" and all their data permanently deleted`);
+      closeDeleteModal();
       loadUsers();
     } catch (err) {
       showToast('error', err.response?.data?.error || 'Failed to delete user');
+    } finally {
+      setDeleteLoading(false);
     }
-  };
-
-  const roleBadgeClass = {
-    admin:           'bg-purple-100 text-purple-700',
-    manager:         'bg-blue-100 text-blue-700',
-    chef:            'bg-emerald-100 text-emerald-700',
-    inventory_staff: 'bg-orange-100 text-orange-700',
   };
 
   return (
     <div className="space-y-6">
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all ${
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${
           toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.message}
+        </div>
+      )}
+
+      {/* Hard-delete confirmation modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-slate-800">Permanently Delete User</h3>
+                <p className="text-xs text-slate-500 mt-0.5">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 space-y-1">
+              <p className="font-semibold">The following will be permanently deleted:</p>
+              <ul className="list-disc list-inside space-y-0.5 text-xs">
+                <li>User account: <strong>{deleteTarget.name}</strong></li>
+                <li>All their ingredients and recipes</li>
+                <li>All consumption and waste logs</li>
+                <li>All notifications and batches</li>
+                <li>All orders placed by this user</li>
+              </ul>
+            </div>
+
+            <form onSubmit={handleHardDelete} className="space-y-3">
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">
+                  Type <strong className="text-red-600">{deleteTarget.name}</strong> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder={deleteTarget.name}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={closeDeleteModal}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={deleteConfirmText !== deleteTarget.name || deleteLoading}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {deleteLoading
+                    ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    : <><Trash2 size={14} /> Delete Permanently</>
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -123,53 +205,26 @@ const UserManagementPage = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  placeholder="e.g. John Smith"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <input type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="e.g. John Smith"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="user@example.com"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="user@example.com"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="Min. 8 characters"
-                  minLength={8}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <input type="password" name="password" value={formData.password} onChange={handleChange} required placeholder="Min. 8 characters" minLength={8}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                >
+                <select name="role" value={formData.role} onChange={handleChange} required
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
                   <option value="">Select a role...</option>
                   {assignableRoles.map(r => (
                     <option key={r} value={r}>{ROLE_LABELS[r]}</option>
@@ -177,16 +232,12 @@ const UserManagementPage = () => {
                 </select>
               </div>
 
-              <button
-                type="submit"
-                disabled={formLoading}
-                className="w-full bg-emerald-600 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-emerald-700 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {formLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <><UserPlus size={16} /> Create User</>
-                )}
+              <button type="submit" disabled={formLoading}
+                className="w-full bg-emerald-600 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-emerald-700 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {formLoading
+                  ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  : <><UserPlus size={16} /> Create User</>
+                }
               </button>
             </form>
           </div>
@@ -206,9 +257,7 @@ const UserManagementPage = () => {
                 <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
               </div>
             ) : users.length === 0 ? (
-              <div className="text-center py-12 text-slate-400 text-sm">
-                No users created yet.
-              </div>
+              <div className="text-center py-12 text-slate-400 text-sm">No users created yet.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
@@ -218,7 +267,7 @@ const UserManagementPage = () => {
                       <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
                       <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
                       <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Created</th>
-                      <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider"></th>
+                      <th className="px-6 py-3"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -236,7 +285,8 @@ const UserManagementPage = () => {
                         </td>
                         <td className="px-6 py-4">
                           <button
-                            onClick={() => handleDelete(user)}
+                            onClick={() => openDeleteModal(user)}
+                            title="Permanently delete user and all their data"
                             className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                           >
                             <Trash2 size={15} />

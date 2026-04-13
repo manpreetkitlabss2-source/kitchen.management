@@ -12,6 +12,7 @@ export default [
     route("batches", "components/batch/BatchesPage.jsx"),
     route("users", "components/dashboard/UserManagementPage.jsx"),
     route("profile", "components/dashboard/ProfilePage.jsx"),
+    route("orders", "components/dashboard/OrderPage.jsx"),
   ]),
 
 

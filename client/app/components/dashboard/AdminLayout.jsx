@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Box, Utensils, Trash2,
-  ClipboardList, LogOut, Menu, X, Users, UserCircle
+  ClipboardList, LogOut, Menu, X, Users, UserCircle, ShoppingCart
 } from 'lucide-react';
 import { Link, useLocation, Outlet, useNavigate } from "react-router";
 import NotificationBell from '../notifications/NotificationBell';
@@ -21,6 +21,7 @@ const AdminLayout = () => {
     { id: 'waste',       label: 'Waste Management',  icon: <Trash2 size={20} />,         path: '/waste',        permission: 'waste:read' },
     { id: 'batches',     label: 'Batches',           icon: <ClipboardList size={20} />,  path: '/batches',      permission: 'batch:read' },
     { id: 'users',       label: 'User Management',   icon: <Users size={20} />,          path: '/users',        permission: 'user:create' },
+    { id: 'orders',      label: 'Orders',             icon: <ShoppingCart size={20} />,   path: '/orders',       permission: 'order:read' },
   ];
 
   const menuItems = allMenuItems.filter(item => can(item.permission));

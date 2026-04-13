@@ -27,6 +27,11 @@ export async function updateIngredient(ingredientData) {
     }
 }
 
+export async function deleteIngredient(id) {
+    const response = await api.delete(`/ingredients/${id}`);
+    return response.data;
+}
+
 // FETCH ALL INGREDIENTS (Recommended for updating the table after save)
 export async function fetchIngredients({ page = 1, limit = 10 } = {}) {
     try {
@@ -47,6 +52,11 @@ export async function fetchRecipes({ page = 1, limit = 10 } = {}) {
 // Create recipe with its ingredient mapping
 export async function createRecipe(recipeData) {
     const response = await api.post("/recipe", recipeData);
+    return response.data;
+}
+
+export async function deleteRecipe(id) {
+    const response = await api.delete(`/recipe/${id}`);
     return response.data;
 }
 
@@ -76,5 +86,16 @@ export async function createWasteLogs(wasteLogsData) {
 // Fetch dashboard stats (single optimized backend call)
 export async function fetchDashboard() {
     const response = await api.get("/dashboard");
+    return response.data;
+}
+
+// Orders
+export async function fetchOrders({ page = 1, limit = 10 } = {}) {
+    const response = await api.get("/orders", { params: { page, limit } });
+    return response.data;
+}
+
+export async function placeOrder(payload) {
+    const response = await api.post("/orders", payload);
     return response.data;
 }

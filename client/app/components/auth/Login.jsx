@@ -1,111 +1,171 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from "react-router"; // or "react-router-dom"
+import { useState } from 'react';
+import { Link, useNavigate } from "react-router";
+import { Eye, EyeOff, AlertCircle, ChefHat } from 'lucide-react';
 import { loginUser } from '../../../services/axiosAuth';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear field error on change
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
+    if (serverError) setServerError(null);
   };
 
-  const handleSubmit = async(e) => {
+  const validate = () => {
+    const e = {};
+    if (!formData.email.trim()) e.email = 'Email address is required.';
+    if (!formData.password) e.password = 'Password is required.';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Logic for JWT-based login goes here
-    const { password, email } = formData;
-    if (!password || !email) {
-      alert("Fill complete form");
-    }
+    if (!validate()) return;
+    setLoading(true);
+    setServerError(null);
     try {
-      const res = await loginUser({password, email})
-      if(res.success == true){
-        navigate("/");
+      const res = await loginUser({ email: formData.email, password: formData.password });
+      if (res.success) {
+        navigate('/');
       } else {
-        console.log("Error: ", res)
-        alert(res.message || "Login failed");
+        setServerError(res.message || 'Login failed. Please try again.');
       }
-    } catch (error) {
-      console.log(error)
-      alert(error.message || "Login failed");
+    } catch (err) {
+      const msg = err.response?.data?.error || err.response?.data?.message || 'Something went wrong. Please try again.';
+      // Map specific messages to field-level errors
+      if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('account')) {
+        setErrors({ email: msg });
+      } else if (msg.toLowerCase().includes('password')) {
+        setErrors({ password: msg });
+      } else {
+        setServerError(msg);
+      }
+    } finally {
+      setLoading(false);
     }
-    console.log("Login Attempt:", formData);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {/* Brand */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <h2 className="text-3xl font-extrabold text-slate-900">
-          Kitchen Inventory Manager
-        </h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Admin Control Center
-        </p>
+        <div className="flex justify-center mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-lg">
+            <ChefHat size={28} className="text-white" />
+          </div>
+        </div>
+        <h1 className="text-3xl font-extrabold text-slate-900">Kitchen Pro</h1>
+        <p className="mt-2 text-sm text-slate-500">Sign in to your management portal</p>
       </div>
 
+      {/* Card */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-200">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+        <div className="bg-white py-8 px-6 shadow-lg rounded-2xl border border-slate-100">
+
+          {/* Server error banner */}
+          {serverError && (
+            <div className="mb-5 flex items-start gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+              <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+              <span>{serverError}</span>
+            </div>
+          )}
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-slate-700">Email Address</label>
-              <div className="mt-1">
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-                  placeholder="admin@restaurant.com"
-                />
-              </div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+              <input
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                enterKeyHint="next"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@restaurant.com"
+                className={`block w-full px-4 py-2.5 text-sm border rounded-xl shadow-sm transition focus:outline-none focus:ring-2 ${
+                  errors.email
+                    ? 'border-red-400 focus:ring-red-300 bg-red-50'
+                    : 'border-slate-300 focus:ring-emerald-400 focus:border-emerald-400'
+                }`}
+              />
+              {errors.email && (
+                <p className="mt-1.5 flex items-center gap-1 text-xs text-red-600">
+                  <AlertCircle size={12} /> {errors.email}
+                </p>
+              )}
             </div>
 
+            {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-slate-700">Password</label>
-              <div className="mt-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+              <div className="relative">
                 <input
                   name="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   required
+                  enterKeyHint="done"
+                  value={formData.password}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
                   placeholder="••••••••"
+                  className={`block w-full px-4 py-2.5 pr-10 text-sm border rounded-xl shadow-sm transition focus:outline-none focus:ring-2 ${
+                    errors.password
+                      ? 'border-red-400 focus:ring-red-300 bg-red-50'
+                      : 'border-slate-300 focus:ring-emerald-400 focus:border-emerald-400'
+                  }`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
+              {errors.password && (
+                <p className="mt-1.5 flex items-center gap-1 text-xs text-red-600">
+                  <AlertCircle size={12} /> {errors.password}
+                </p>
+              )}
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input type="checkbox" className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded" />
-                <label className="ml-2 block text-sm text-slate-900">Remember me</label>
-              </div>
-              <div className="text-sm">
-                <a href="#" className="font-medium text-emerald-600 hover:text-emerald-500">Forgot password?</a>
-              </div>
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
-              >
-                Sign In
-              </button>
-            </div>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+            >
+              {loading
+                ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Signing in...</>
+                : 'Sign In'
+              }
+            </button>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-300"></div></div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">New manager?</span>
-              </div>
-            </div>
-            <div className="mt-6">
-              <Link to="/signup" className="w-full flex justify-center py-2 px-4 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">
-                Create Admin Account
-              </Link>
-            </div>
+          {/* Divider */}
+          <div className="mt-6 relative">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
+            <div className="relative flex justify-center text-xs"><span className="px-3 bg-white text-slate-400">New to Kitchen Pro?</span></div>
+          </div>
+
+          <div className="mt-4">
+            <Link
+              to="/signup"
+              className="w-full flex justify-center py-2.5 px-4 border border-slate-300 rounded-xl text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition"
+            >
+              Create Admin Account
+            </Link>
           </div>
         </div>
       </div>
