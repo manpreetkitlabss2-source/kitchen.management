@@ -1,0 +1,13 @@
+{
+  "name": "management-system",
+  "version": "1.0.0",
+  "description": "A production-grade internal operations platform for restaurants to manage kitchen inventory, track ingredient consumption, monitor wastage, and receive real-time stock alerts.",
+  "main": "index.js",
+  "scripts": {
+    "ai:prelog": "node scripts/prePromptLogger.js",
+    "ai:postlog": "node scripts/postTaskLogger.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

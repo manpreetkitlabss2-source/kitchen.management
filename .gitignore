@@ -1,9 +1,62 @@
-# amazonQ-rules
+# ─── Amazon Q ────────────────────────────────────────────────────────────────
 .amazonq/
 
-# PDF and generated docs
+# ─── Environment variables (all variants) ────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# ─── Node ────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+.pnp
+.pnp.js
+
+# ─── Build output ────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+
+# ─── Test & coverage ─────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── AI prompt logs (daily JSON files — keep folder, ignore content) ─────────
+.ai-logs/*.json
+.ai-logs/*.txt
+
+# ─── Docker ──────────────────────────────────────────────────────────────────
+*.env.docker
+
+# ─── OS files ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Editor ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.sw?
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+logs/
+*.log
+
+# ─── Temp ────────────────────────────────────────────────────────────────────
+tmp/
+temp/
+
+# ─── PDF / generated docs (not source) ───────────────────────────────────────
 *.pdf
 
-# Local markdown guides (not part of source)
+# ─── Local-only markdown guides ──────────────────────────────────────────────
 TABLE_UNIFICATION_GUIDE.md
 BRD.summery.md

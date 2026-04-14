@@ -1,61 +1,52 @@
-# Logs
-
-logs
-*.log
+# ─── Node ────────────────────────────────────────────────────────────────────
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Node modules
-
-node_modules/
-
-# Build output
-
-dist/
-build/
-
-# Environment variables
-
+# ─── Environment variables ───────────────────────────────────────────────────
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Dependency directories
+# ─── Build output ────────────────────────────────────────────────────────────
+dist/
+build/
 
+# ─── Vite ────────────────────────────────────────────────────────────────────
+.vite/
+vite.config.ts.timestamp-*
+
+# ─── React Router (generated types — build artifact) ─────────────────────────
+.react-router/
+
+# ─── TypeScript ──────────────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── Tailwind / PostCSS cache ────────────────────────────────────────────────
+.cache/
+
+# ─── Coverage ────────────────────────────────────────────────────────────────
+coverage/
+
+# ─── Dependency directories ──────────────────────────────────────────────────
 .pnp
 .pnp.js
 
-# Testing
-
-coverage/
-
-# Vite files
-
-.vite/
-
-# React Router generated types (build artifact)
-
-.react-router/
-
-# Editor directories and files
-
+# ─── OS / Editor ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
 .vscode/
 .idea/
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Tailwind cache
-
-.cache/
-
-# Optional: TypeScript
-
-*.tsbuildinfo
+# ─── Logs ────────────────────────────────────────────────────────────────────
+logs/
+*.log
