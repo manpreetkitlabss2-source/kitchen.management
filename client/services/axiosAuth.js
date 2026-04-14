@@ -121,6 +121,9 @@ export async function signupUser({ name, restaurantName, email, password }) {
             setToken(token);
         }
 
+        // Signup always creates an admin — save role so sidebar renders correctly
+        saveRole('admin');
+
         return response.data;
     } catch (error) {
         console.error("Signup error:", error.response?.data || error.message);

@@ -45,7 +45,8 @@ class InventoryService {
     );
     const data = rows.map(r => ({
       _id: String(r.id), name: r.name, unit: r.unit,
-      current_stock: r.current_stock, threshold_value: r.threshold_value
+      current_stock: Number(r.current_stock),
+      threshold_value: Number(r.threshold_value)
     }));
     const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM ingredients WHERE restaurant_id = ? AND deleted_at IS NULL', [restaurant_id]);
     return { data: data || [], page: Number(page), limit: Number(limit), total: Number(total) || 0 };

@@ -88,8 +88,8 @@ const IngredientPage = () => {
     {
       key: "status", label: "Status", sortable: false,
       render: (item) => (
-        <span className={`px-2 py-1 rounded text-xs font-bold ${item.current_stock <= 0 ? "text-red-700 bg-red-100" : item.current_stock <= item.threshold_value ? "text-orange-600 bg-orange-50" : "text-emerald-600 bg-emerald-50"}`}>
-          {item.current_stock <= 0 ? "Out of Stock" : item.current_stock <= item.threshold_value ? "Low Stock" : "In Stock"}
+        <span className={`px-2 py-1 rounded text-xs font-bold ${item.current_stock <= 0 ? "text-red-700 bg-red-100" : item.current_stock < item.threshold_value ? "text-orange-600 bg-orange-50" : "text-emerald-600 bg-emerald-50"}`}>
+          {item.current_stock <= 0 ? "Out of Stock" : item.current_stock < item.threshold_value ? "Low Stock" : "In Stock"}
         </span>
       ),
     },
