@@ -14,8 +14,8 @@ const IngredientPage = () => {
   const [limit, setLimit] = useState(10);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const [editFormData, setEditFormData] = useState({ name: "", unit: "kg", currentStock: 0, minThreshold: "" });
-  const [formData, setFormData] = useState({ name: '', unit: 'kg', currentStock: 0, minThreshold: '' });
+  const [editFormData, setEditFormData] = useState({ name: "", unit: "kg", minThreshold: "" });
+  const [formData, setFormData] = useState({ name: '', unit: 'kg', minThreshold: '' });
 
   const { data: ingredients, loading, fetch, add, update, remove: removeIngredient, page, totalPages, total } = useIngredients();
 
@@ -40,7 +40,7 @@ const IngredientPage = () => {
 
   const handleEditClick = (item) => {
     setEditingIngredient(item);
-    setEditFormData({ name: item.name, unit: item.unit, currentStock: item.current_stock, minThreshold: item.threshold_value });
+    setEditFormData({ name: item.name, unit: item.unit, minThreshold: item.threshold_value });
     setIsEditFormOpen(true);
   };
 
@@ -51,7 +51,6 @@ const IngredientPage = () => {
         _id: editingIngredient._id,
         name: editFormData.name,
         unit: editFormData.unit,
-        current_stock: Number(editFormData.currentStock),
         threshold_value: Number(editFormData.minThreshold)
       });
       success('Ingredient Updated', `"${editFormData.name}" has been updated successfully.`);
@@ -70,10 +69,10 @@ const IngredientPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await add({ name: formData.name, unit: formData.unit, currentStock: Number(formData.currentStock), minThreshold: Number(formData.minThreshold || 0) });
-      setFormData({ name: '', unit: 'kg', minThreshold: '', currentStock: 0 });
+      await add({ name: formData.name, unit: formData.unit, minThreshold: Number(formData.minThreshold || 0) });
+      setFormData({ name: '', unit: 'kg', minThreshold: '' });
       setIsFormOpen(false);
-      success('Ingredient Added', `"${formData.name}" has been added to inventory.`);
+      success('Ingredient Added', `"${formData.name}" has been added. Add a batch to increase stock.`);
       fetch(1, limit);
     } catch (err) {
       toastError('Save Failed', err.response?.data?.error || 'Could not save ingredient. Please try again.');
@@ -173,11 +172,10 @@ const IngredientPage = () => {
               <label className="block text-sm font-medium text-slate-700">Min. Threshold</label>
               <input type="number" name="minThreshold" value={formData.minThreshold} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="5" required />
             </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700">Initial Stock</label>
-              <input type="number" name="currentStock" value={formData.currentStock} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="0" required />
-            </div>
           </div>
+          <p className="text-xs text-slate-500">
+            Stock is managed through batches. Create the ingredient first, then add batch quantities with expiry dates.
+          </p>
           <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-emerald-700 transition-all shadow-lg mt-4">Save Ingredient</button>
         </form>
       </FloatingFormCard>
@@ -199,11 +197,10 @@ const IngredientPage = () => {
               <label className="block text-sm font-medium text-slate-700">Min Threshold</label>
               <input type="number" value={editFormData.minThreshold} onChange={(e) => setEditFormData({ ...editFormData, minThreshold: e.target.value })} className="mt-1 block w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg" required />
             </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700">Current Stock</label>
-              <input type="number" value={editFormData.currentStock} onChange={(e) => setEditFormData({ ...editFormData, currentStock: e.target.value })} className="mt-1 block w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg" required />
-            </div>
           </div>
+          <p className="text-xs text-slate-500">
+            Stock cannot be edited here. Adjust quantities by creating, updating, or deleting ingredient batches.
+          </p>
           <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-lg">Update Ingredient</button>
         </form>
       </FloatingFormCard>

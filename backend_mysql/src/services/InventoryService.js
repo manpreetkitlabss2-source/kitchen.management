@@ -1,21 +1,28 @@
 const pool = require('../config/db');
+const BatchService = require('./batchService');
 
 class InventoryService {
   // --- Ingredient Logic ---
-  async addIngredient({ name, unit, current_stock = 0, threshold_value = 0, user_id, restaurant_id }) {
+  async addIngredient({ name, unit, threshold_value = 0, user_id, restaurant_id }) {
     const [result] = await pool.query(
       'INSERT INTO ingredients (restaurant_id, user_id, name, unit, current_stock, threshold_value) VALUES (?, ?, ?, ?, ?, ?)',
-      [restaurant_id, user_id, name, unit, current_stock, threshold_value]
+      [restaurant_id, user_id, name, unit, 0, threshold_value]
     );
-    return { _id: String(result.insertId), name, unit, current_stock, threshold_value };
+    return { _id: String(result.insertId), name, unit, current_stock: 0, threshold_value };
   }
 
   async editIngredient(data, user_id, restaurant_id) {
     const { _id, id, ...updateData } = data;
     const resolvedId = _id || id;
     if (!resolvedId) throw new Error('Ingredient ID is required for update');
+    if (Object.prototype.hasOwnProperty.call(updateData, 'current_stock')) {
+      throw new Error('Ingredient stock is managed through batches and cannot be edited directly.');
+    }
 
-    const keys = Object.keys(updateData).filter(k => updateData[k] !== undefined);
+    const allowedFields = ['name', 'unit', 'threshold_value'];
+    const keys = Object.keys(updateData).filter(
+      (k) => updateData[k] !== undefined && allowedFields.includes(k)
+    );
     if (keys.length === 0) throw new Error('No valid fields provided for update');
 
     const setClause = keys.map(k => `${k} = ?`).join(', ');
@@ -163,10 +170,8 @@ class InventoryService {
           if (item.current_stock <= 0) throw new Error(`"${item.name}" is currently out of stock.`);
           if (item.current_stock < qty) throw new Error(`Not enough "${item.name}" in stock. Required: ${qty}, Available: ${item.current_stock}.`);
 
-          await conn.query(
-            'UPDATE ingredients SET current_stock = current_stock - ? WHERE id = ? AND restaurant_id = ?',
-            [qty, item.ingredient_id, restaurant_id]
-          );
+          // Deduct from batches using FIFO
+          await BatchService.deductStockFIFO(item.ingredient_id, qty, restaurant_id, conn);
           logs.push([restaurant_id, user_id, 'consumption', item.ingredient_id, recipe_id, qty]);
         }
 
@@ -188,10 +193,8 @@ class InventoryService {
           if (ingredient.current_stock <= 0) throw new Error(`"${ingredient.name}" is currently out of stock.`);
           if (ingredient.current_stock < qty) throw new Error(`Not enough "${ingredient.name}" in stock. Required: ${qty}, Available: ${ingredient.current_stock}.`);
 
-          await conn.query(
-            'UPDATE ingredients SET current_stock = current_stock - ? WHERE id = ? AND restaurant_id = ?',
-            [qty, ingredient_id, restaurant_id]
-          );
+          // Deduct from batches using FIFO
+          await BatchService.deductStockFIFO(ingredient_id, qty, restaurant_id, conn);
           logs.push([restaurant_id, user_id, 'consumption', ingredient_id, null, qty]);
         }
       }
@@ -251,10 +254,8 @@ class InventoryService {
     const conn = await pool.getConnection();
     await conn.beginTransaction();
     try {
-      await conn.query(
-        'UPDATE ingredients SET current_stock = current_stock - ? WHERE id = ? AND restaurant_id = ?',
-        [quantity, ingredient_id, restaurant_id]
-      );
+      // Deduct from batches using FIFO
+      await BatchService.deductStockFIFO(ingredient_id, quantity, restaurant_id, conn);
       const [result] = await conn.query(
         'INSERT INTO logs (restaurant_id, user_id, type, ingredient_id, quantity, reason) VALUES (?, ?, ?, ?, ?, ?)',
         [restaurant_id, user_id, 'waste', ingredient_id, quantity, reason]
@@ -385,13 +386,7 @@ class InventoryService {
         const logs = [];
         for (const ing of recipe_ingredients) {
           const totalQty = ing.quantity_required * quantity;
-          if (ing.current_stock < totalQty) {
-            throw new Error(`Not enough "${ing.name}" in stock. Required: ${totalQty}, available: ${ing.current_stock}.`);
-          }
-          await conn.query(
-            'UPDATE ingredients SET current_stock = current_stock - ? WHERE id = ? AND restaurant_id = ?',
-            [totalQty, ing.ingredient_id, restaurant_id]
-          );
+          await BatchService.deductStockFIFO(ing.ingredient_id, totalQty, restaurant_id, conn);
           logs.push([restaurant_id, user_id, 'consumption', ing.ingredient_id, recipe_id, totalQty]);
         }
 

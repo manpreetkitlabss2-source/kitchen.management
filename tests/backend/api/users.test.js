@@ -1,84 +1,123 @@
+const http    = require('http');
 const request = require('supertest');
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../setup/.env.test') });
-
-const app = require('../../../../backend_mysql/src/app');
+const app     = require('@backend/app');
 const { makeUser } = require('../../utils/testDataFactory');
 
-describe('Users API', () => {
+const server = http.createServer(app);
+beforeAll(() => new Promise((resolve) =>
+  server.listen(0, () => { server.unref(); resolve(); })
+));
+afterAll(() => new Promise((resolve) =>
+  server.closeAllConnections
+    ? (server.closeAllConnections(), server.close(resolve))
+    : server.close(resolve)
+));
+
+describe('Users API — /api/users', () => {
   let adminToken;
   let createdUserId;
 
   beforeAll(async () => {
-    const admin = makeUser({ email: `users_admin_${Date.now()}@test.com` });
-    await request(app).post('/api/auth/signup').send(admin);
-    const res = await request(app)
+    const admin = makeUser();
+    await request(server).post('/api/auth/signup').send(admin);
+    const res = await request(server)
       .post('/api/auth/login')
       .send({ email: admin.email, password: admin.password });
     adminToken = res.body.token;
   });
 
+  // ── Create sub-user ───────────────────────────────────────────────────────
   describe('POST /api/users/create', () => {
-    it('admin creates a manager', async () => {
-      const newUser = makeUser({ email: `mgr_${Date.now()}@test.com` });
-      const res = await request(app)
+    it('201 — admin creates a manager', async () => {
+      const res = await request(server)
         .post('/api/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ ...newUser, role: 'manager' });
+        .send({ ...makeUser(), role: 'manager' });
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.user).toHaveProperty('role', 'manager');
       createdUserId = res.body.user.id;
     });
 
-    it('rejects missing role field', async () => {
-      const res = await request(app)
+    it('201 — admin creates a chef', async () => {
+      const res = await request(server)
         .post('/api/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send(makeUser({ email: `norole_${Date.now()}@test.com` }));
+        .send({ ...makeUser(), role: 'chef' });
+      expect(res.status).toBe(201);
+      expect(res.body.user).toHaveProperty('role', 'chef');
+    });
+
+    it('201 — admin creates an inventory_staff', async () => {
+      const res = await request(server)
+        .post('/api/users/create')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ...makeUser(), role: 'inventory_staff' });
+      expect(res.status).toBe(201);
+      expect(res.body.user).toHaveProperty('role', 'inventory_staff');
+    });
+
+    it('400 — rejects missing role field', async () => {
+      const res = await request(server)
+        .post('/api/users/create')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(makeUser());
       expect(res.status).toBe(400);
     });
 
-    it('rejects invalid role assignment (admin role)', async () => {
-      const res = await request(app)
+    it('403 — rejects assigning admin role', async () => {
+      const res = await request(server)
         .post('/api/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ ...makeUser({ email: `badrole_${Date.now()}@test.com` }), role: 'admin' });
+        .send({ ...makeUser(), role: 'admin' });
       expect(res.status).toBe(403);
     });
 
-    it('returns 401 without token', async () => {
-      const res = await request(app)
+    it('401 — rejects unauthenticated request', async () => {
+      const res = await request(server)
         .post('/api/users/create')
         .send({ ...makeUser(), role: 'chef' });
       expect(res.status).toBe(401);
     });
   });
 
+  // ── List users ────────────────────────────────────────────────────────────
   describe('GET /api/users', () => {
-    it('returns list of sub-users', async () => {
-      const res = await request(app)
+    it('200 — returns list of sub-users', async () => {
+      const res = await request(server)
         .get('/api/users')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.length).toBeGreaterThan(0);
+    });
+
+    it('401 — rejects unauthenticated request', async () => {
+      const res = await request(server).get('/api/users');
+      expect(res.status).toBe(401);
     });
   });
 
+  // ── Hard delete sub-user ──────────────────────────────────────────────────
   describe('DELETE /api/users/:id', () => {
-    it('hard-deletes a sub-user', async () => {
-      const res = await request(app)
+    it('200 — hard-deletes a sub-user', async () => {
+      const res = await request(server)
         .delete(`/api/users/${createdUserId}`)
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
     });
 
-    it('returns 404 for already-deleted user', async () => {
-      const res = await request(app)
+    it('404 — returns 404 for already-deleted user', async () => {
+      const res = await request(server)
         .delete(`/api/users/${createdUserId}`)
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(404);
+    });
+
+    it('401 — rejects unauthenticated request', async () => {
+      const res = await request(server).delete(`/api/users/${createdUserId}`);
+      expect(res.status).toBe(401);
     });
   });
 });

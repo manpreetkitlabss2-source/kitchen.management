@@ -5,7 +5,7 @@ const logFilePath = path.join(
   __dirname,
   "..",
   ".ai-logs",
-  "prompt-log.txt"
+  "prompt-log.md"
 );
 
 function logPrompt(prompt, summary = "", files = []) {

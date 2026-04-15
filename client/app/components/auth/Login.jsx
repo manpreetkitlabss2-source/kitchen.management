@@ -87,7 +87,6 @@ const LoginPage = () => {
                 name="email"
                 type="email"
                 autoComplete="email"
-                required
                 enterKeyHint="next"
                 value={formData.email}
                 onChange={handleChange}
@@ -113,7 +112,6 @@ const LoginPage = () => {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  required
                   enterKeyHint="done"
                   value={formData.password}
                   onChange={handleChange}

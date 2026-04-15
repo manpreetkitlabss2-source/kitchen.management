@@ -190,6 +190,7 @@ const setupDatabase = async () => {
         console.log("🚀 Database fully initialized and secured!");
     } catch (err) {
         console.error("❌ Setup Failed:", err.message);
+        throw err;
     }
 };
 

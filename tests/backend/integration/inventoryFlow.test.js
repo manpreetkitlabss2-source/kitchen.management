@@ -1,76 +1,126 @@
+const http    = require('http');
 const request = require('supertest');
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../setup/.env.test') });
+const app     = require('@backend/app');
+const { makeUser, makeIngredient } = require('../../utils/testDataFactory');
 
-const app = require('../../../../backend_mysql/src/app');
-const { makeUser, makeIngredient, makeRecipe } = require('../../utils/testDataFactory');
+const server = http.createServer(app);
+beforeAll(() => new Promise((resolve) =>
+  server.listen(0, () => { server.unref(); resolve(); })
+));
+afterAll(() => new Promise((resolve) =>
+  server.closeAllConnections
+    ? (server.closeAllConnections(), server.close(resolve))
+    : server.close(resolve)
+));
 
 /**
- * Integration: Login → Create Ingredient → Create Recipe → Prepare Dish → Check Stock Reduced
+ * End-to-end flow:
+ * Signup → Login → Create Ingredient → Create Recipe →
+ * Prepare Dish → Verify Stock Deducted → Verify Consumption Log →
+ * Log Waste → Verify Stock Deducted Again
  */
-describe('Integration: Inventory Flow', () => {
+describe('Integration — Full Inventory Flow', () => {
   let token;
   let ingredientId;
   let recipeId;
-  let initialStock;
+  const INITIAL_STOCK = 50;
+  const CONSUME_QTY   = 2;
+  const WASTE_QTY     = 1;
 
-  const user = makeUser({ email: `integ_inv_${Date.now()}@test.com` });
+  const user = makeUser();
 
-  it('1. registers admin', async () => {
-    const res = await request(app).post('/api/auth/signup').send(user);
-    expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('token');
-    token = res.body.token;
+  beforeAll(async () => {
+    const signupRes = await request(server).post('/api/auth/signup').send(user);
+    expect(signupRes.status).toBe(201);
+    token = signupRes.body.token;
   });
 
-  it('2. creates an ingredient with stock', async () => {
-    initialStock = 50;
-    const res = await request(app)
+  it('creates ingredient with known stock', async () => {
+    const res = await request(server)
       .post('/api/ingredients')
       .set('Authorization', `Bearer ${token}`)
-      .send(makeIngredient({ currentStock: initialStock, minThreshold: 5 }));
+      .send(makeIngredient({ minThreshold: 5 }));
     expect(res.status).toBe(201);
     ingredientId = res.body._id;
+
+    // Add batch to set initial stock
+    const batchRes = await request(server)
+      .post('/api/batches')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        ingredient_id: ingredientId,
+        quantity: INITIAL_STOCK,
+        expiry_date: '2026-12-31'
+      });
+    expect(batchRes.status).toBe(201);
   });
 
-  it('3. creates a recipe using that ingredient', async () => {
-    const res = await request(app)
+  it('creates recipe mapping that ingredient', async () => {
+    const res = await request(server)
       .post('/api/recipe')
       .set('Authorization', `Bearer ${token}`)
       .send({
-        name: 'Test Dish',
-        ingredientsMap: [{ ingredient_id: ingredientId, quantity_required: 2 }],
+        name          : 'Integration Test Dish',
+        ingredientsMap: [{ ingredient_id: ingredientId, quantity_required: CONSUME_QTY }],
       });
     expect(res.status).toBe(201);
     recipeId = res.body._id;
   });
 
-  it('4. prepares dish and deducts stock', async () => {
-    const res = await request(app)
+  it('prepares dish — deducts stock', async () => {
+    const res = await request(server)
       .post('/api/consumption/prepare')
       .set('Authorization', `Bearer ${token}`)
       .send({
         recipe_id: recipeId,
-        items: [{ ingredient_id: ingredientId, quantity_required: 2 }],
+        items    : [{ ingredient_id: ingredientId, quantity_required: CONSUME_QTY }],
       });
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Stock deducted successfully');
   });
 
-  it('5. verifies stock was reduced', async () => {
-    const res = await request(app)
+  it('stock is reduced by consumed quantity', async () => {
+    const res = await request(server)
       .get('/api/ingredients')
       .set('Authorization', `Bearer ${token}`);
     const ing = res.body.data.find(i => i._id === ingredientId);
     expect(ing).toBeDefined();
-    expect(Number(ing.current_stock)).toBe(initialStock - 2);
+    expect(Number(ing.current_stock)).toBe(INITIAL_STOCK - CONSUME_QTY);
   });
 
-  it('6. consumption log appears in history', async () => {
-    const res = await request(app)
+  it('consumption log contains the new entry', async () => {
+    const res = await request(server)
       .get('/api/consumption?page=1&limit=10')
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.length).toBeGreaterThan(0);
+    const entry = res.body.data.find(
+      l => l.ingredient_id._id === ingredientId || l.ingredient_id === ingredientId
+    );
+    expect(entry).toBeDefined();
+  });
+
+  it('logs waste — deducts stock further', async () => {
+    const res = await request(server)
+      .post('/api/waste')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ingredientId, quantity: WASTE_QTY, reason: 'Spoiled' });
+    expect(res.status).toBe(200);
+  });
+
+  it('stock is reduced by waste quantity', async () => {
+    const res = await request(server)
+      .get('/api/ingredients')
+      .set('Authorization', `Bearer ${token}`);
+    const ing = res.body.data.find(i => i._id === ingredientId);
+    expect(Number(ing.current_stock)).toBe(INITIAL_STOCK - CONSUME_QTY - WASTE_QTY);
+  });
+
+  it('dashboard reflects updated counts', async () => {
+    const res = await request(server)
+      .get('/api/dashboard')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.summary).toHaveProperty('totalIngredients');
+    expect(res.body.summary.totalConsumption).toBeGreaterThan(0);
   });
 });

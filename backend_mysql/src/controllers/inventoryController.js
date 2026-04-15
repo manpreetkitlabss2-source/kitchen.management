@@ -1,34 +1,48 @@
 const InventoryService = require('../services/InventoryService');
 
+const getStatusCode = (error, fallback = 500) => {
+  const message = error?.message?.toLowerCase?.() || '';
+  if (
+    message.includes('invalid') ||
+    message.includes('required') ||
+    message.includes('no valid fields') ||
+    message.includes('cannot be edited directly')
+  ) {
+    return 400;
+  }
+  if (message.includes('not found')) {
+    return 404;
+  }
+  return fallback;
+};
+
 exports.getIngredients = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const data = await InventoryService.getAllIngredients({ page: +page, limit: +limit, restaurant_id: req.user.restaurantId });
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(getStatusCode(error)).json({ error: error.message });
   }
 };
 
 exports.addIngredient = async (req, res) => {
   try {
-    const { name, unit, currentStock, minThreshold, current_stock, threshold_value } = req.body;
-    const stock = current_stock ?? currentStock;
+    const { name, unit, minThreshold, threshold_value } = req.body;
     const threshold = threshold_value ?? minThreshold;
-    if (!name || !unit || stock === undefined) {
+    if (!name || !unit) {
       return res.status(400).json({ success: false, message: 'invalid data' });
     }
     const data = await InventoryService.addIngredient({
       name,
       unit: unit.toLowerCase(),
-      current_stock: stock,
       threshold_value: threshold,
       user_id: req.user.userId,
       restaurant_id: req.user.restaurantId
     });
     res.status(201).json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(getStatusCode(error)).json({ error: error.message });
   }
 };
 
@@ -37,7 +51,7 @@ exports.editIngredients = async (req, res) => {
     const data = await InventoryService.editIngredient(req.body, req.user.userId, req.user.restaurantId);
     res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(getStatusCode(error)).json({ error: error.message });
   }
 };
 
@@ -56,7 +70,7 @@ exports.getRecipe = async (req, res) => {
     const data = await InventoryService.getAllRecipes({ page: +page, limit: +limit, restaurant_id: req.user.restaurantId });
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(getStatusCode(error)).json({ error: error.message });
   }
 };
 
@@ -74,7 +88,7 @@ exports.addRecipe = async (req, res) => {
     const data = await InventoryService.createRecipe(name, normalized, req.user.userId, req.user.restaurantId);
     res.status(201).json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(getStatusCode(error)).json({ error: error.message });
   }
 };
 

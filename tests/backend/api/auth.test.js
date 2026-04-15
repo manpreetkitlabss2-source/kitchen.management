@@ -1,80 +1,111 @@
+const http    = require('http');
 const request = require('supertest');
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../setup/.env.test') });
-
-const app = require('../../../../backend_mysql/src/app');
+const app     = require('@backend/app');
 const { makeUser } = require('../../utils/testDataFactory');
 
-describe('Auth API', () => {
-  const user = makeUser({ email: `auth_test_${Date.now()}@test.com` });
+const server = http.createServer(app);
+beforeAll(() => new Promise((resolve) =>
+  server.listen(0, () => { server.unref(); resolve(); })
+));
+afterAll(() => new Promise((resolve) =>
+  server.closeAllConnections
+    ? (server.closeAllConnections(), server.close(resolve))
+    : server.close(resolve)
+));
 
+// Use env-sourced values — never hardcode credentials in test files
+const WRONG_PASS   = process.env.TEST_WRONG_PASS || 'wrong_pass_env';
+const UNKNOWN_EMAIL = 'nobody_unknown@nowhere.test';
+
+describe('Auth API — /api/auth', () => {
+  const user = makeUser();
+
+  // ── Signup ────────────────────────────────────────────────────────────────
   describe('POST /api/auth/signup', () => {
-    it('registers a new admin and returns a token', async () => {
-      const res = await request(app).post('/api/auth/signup').send(user);
+    it('201 — registers a new admin and returns token + success flag', async () => {
+      const res = await request(server).post('/api/auth/signup').send(user);
       expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty('token');
       expect(res.body.success).toBe(true);
+      expect(res.body).toHaveProperty('token');
+      expect(typeof res.body.token).toBe('string');
     });
 
-    it('rejects duplicate email', async () => {
-      const res = await request(app).post('/api/auth/signup').send(user);
+    it('400 — rejects duplicate email', async () => {
+      const res = await request(server).post('/api/auth/signup').send(user);
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('error');
     });
 
-    it('rejects missing fields', async () => {
-      const res = await request(app).post('/api/auth/signup').send({ email: 'x@x.com' });
+    it('400 — rejects payload missing name', async () => {
+      const { name, ...noName } = user;
+      const res = await request(server).post('/api/auth/signup').send(noName);
+      expect(res.status).toBe(400);
+    });
+
+    it('400 — rejects payload missing password', async () => {
+      const { password, ...noPass } = user;
+      const res = await request(server).post('/api/auth/signup').send(noPass);
       expect(res.status).toBe(400);
     });
   });
 
+  // ── Login ─────────────────────────────────────────────────────────────────
   describe('POST /api/auth/login', () => {
-    it('logs in with valid credentials', async () => {
-      const res = await request(app)
+    it('200 — returns token and user object on valid credentials', async () => {
+      const res = await request(server)
         .post('/api/auth/login')
         .send({ email: user.email, password: user.password });
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('token');
       expect(res.body.success).toBe(true);
-      expect(res.body.user).toHaveProperty('role', 'admin');
+      expect(res.body).toHaveProperty('token');
+      expect(res.body.user).toMatchObject({ role: 'admin' });
     });
 
-    it('rejects wrong password', async () => {
-      const res = await request(app)
+    it('401 — rejects wrong password', async () => {
+      const res = await request(server)
         .post('/api/auth/login')
-        .send({ email: user.email, password: 'wrongpassword' });
+        .send({ email: user.email, password: WRONG_PASS });
       expect(res.status).toBe(401);
       expect(res.body).toHaveProperty('error');
     });
 
-    it('rejects unknown email', async () => {
-      const res = await request(app)
+    it('401 — rejects unknown email', async () => {
+      const res = await request(server)
         .post('/api/auth/login')
-        .send({ email: 'nobody@nowhere.com', password: 'pass' });
+        .send({ email: UNKNOWN_EMAIL, password: WRONG_PASS });
       expect(res.status).toBe(401);
     });
   });
 
+  // ── Me ────────────────────────────────────────────────────────────────────
   describe('GET /api/auth/me', () => {
     let token;
 
     beforeAll(async () => {
-      const res = await request(app)
+      const res = await request(server)
         .post('/api/auth/login')
         .send({ email: user.email, password: user.password });
       token = res.body.token;
     });
 
-    it('returns current user profile', async () => {
-      const res = await request(app)
+    it('200 — returns authenticated user profile', async () => {
+      const res = await request(server)
         .get('/api/auth/me')
         .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('email', user.email);
+      expect(res.body).toHaveProperty('role', 'admin');
     });
 
-    it('returns 401 without token', async () => {
-      const res = await request(app).get('/api/auth/me');
+    it('401 — rejects request with no token', async () => {
+      const res = await request(server).get('/api/auth/me');
+      expect(res.status).toBe(401);
+    });
+
+    it('401 — rejects malformed token', async () => {
+      const res = await request(server)
+        .get('/api/auth/me')
+        .set('Authorization', 'Bearer not.a.valid.token');
       expect(res.status).toBe(401);
     });
   });

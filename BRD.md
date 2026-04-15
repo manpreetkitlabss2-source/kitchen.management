@@ -1,834 +1,213 @@
-# Business Requirements Document (BRD)
+# Business Requirements Document
 
-# Kitchen Pro — Restaurant Management System
+## Kitchen Pro — Restaurant Management System
 
-### Client Proposal Version (Concise)
+**Version:** 1.0
+**Status:** Active Development
+**Prepared for:** Client Review
 
 ---
 
-# 1. Executive Summary
+## 1. Executive Summary
 
 Kitchen Pro is a restaurant operations management system designed to improve inventory control, reduce food wastage, and ensure smooth kitchen operations through real-time stock tracking, automated consumption logging, and actionable insights.
 
-The system replaces manual inventory processes with a centralized digital platform that provides visibility into ingredient usage, stock levels, and waste, enabling faster and more informed business decisions.
+The system replaces manual inventory processes with a centralized digital platform that provides complete visibility into ingredient usage, stock levels, and waste — enabling faster and more informed business decisions.
 
 ---
 
-# 2. Business Problem
+## 2. Business Problem
 
-Restaurants commonly face operational challenges such as:
+Restaurants commonly face operational challenges that directly impact profitability and service quality:
 
-* Unexpected stock shortages
-* Food wastage due to poor tracking
-* Manual inventory management
-* Lack of real-time visibility
-* Inefficient purchasing decisions
+| Problem | Business Impact |
+|---|---|
+| Unexpected stock shortages | Service disruptions, lost revenue |
+| Untracked food wastage | Increased costs, no accountability |
+| Manual inventory checks | Staff time wasted, human error |
+| No real-time visibility | Reactive decisions instead of proactive |
+| Single-role access | No control over what staff can see or do |
+| No consumption analytics | Purchasing decisions based on guesswork |
 
-These issues increase costs and reduce operational efficiency.
-
----
-
-# 3. Proposed Solution
-
-Kitchen Pro provides a centralized system that:
-
-* Tracks ingredient stock in real time
-* Automatically deducts inventory during preparation
-* Records waste with reasons
-* Generates low-stock and out-of-stock alerts
-* Provides dashboards and operational reports
-
-This allows restaurant managers to maintain accurate inventory and reduce operational risks.
-
----
-
-# 4. Key Business Benefits
-
-* Reduced food wastage
-* Improved inventory accuracy
-* Faster kitchen operations
-* Better purchasing decisions
-* Real-time operational visibility
-* Increased efficiency and cost control
-
----
-
-# 5. Core System Modules
-
-The system currently includes the following modules:
-
-### Authentication
-
-* Secure user login
-* Protected system access
-* Encrypted passwords
-
----
-
-### Inventory Management
-
-* Add and update ingredients
-* Track stock quantities
-* Set minimum stock thresholds
-* View inventory status
-
----
-
-### Recipe Management
-
-* Create and manage recipes
-* Define ingredient requirements
-* Maintain recipe database
-
----
-
-### Consumption Tracking
-
-* Automatically deduct ingredients when dishes are prepared
-* Prevent preparation if stock is insufficient
-* Maintain preparation history
-
----
-
-### Waste Management
-
-* Record wasted ingredients
-* Capture waste reasons
-* Update stock automatically
-
----
-
-### Notifications
-
-* Detect low stock and out-of-stock items
-* Generate alerts
-* Display unread notifications
-
----
-
-### Dashboard and Reporting
-
-* Inventory health overview
-* Consumption and waste reports
-* Low-stock alerts
-* Operational summaries
-
----
-
-# 6. Features Currently in Development
-
-The following enhancements are actively being implemented to improve system capability and operational control.
-
----
-
-## Expiry Date Tracking and Batch Management
-
-The system is being enhanced to track ingredient batches with expiry dates instead of a single stock value.
-
-### Benefits
-
-* Prevents use of expired ingredients
-* Reduces food wastage
-* Enables FIFO consumption
-* Improves inventory planning
-
----
-
-## Supplier and Purchase Order Management
-
-A supplier and purchasing module is being introduced to manage procurement operations.
-
-### Benefits
-
-* Streamlines purchasing workflow
-* Tracks supplier information
-* Maintains purchase history
-* Automatically updates stock after delivery
-
----
-
-## Role-Based Access Control (RBAC)
-
-The system is being upgraded to support multiple user roles with permission-based access.
-
-### Roles
-
-* Admin
-* Manager
-* Chef
-* Inventory Staff
-* Viewer
-
-### Benefits
-
-* Improves security
-* Controls user access
-* Defines responsibilities
-* Supports scalable operations
-
----
-
-# 7. Future Product Roadmap
-
-The following advanced features are planned for future versions of the system.
-
----
-
-## AI-Based Demand Forecasting
-
-The system will analyze historical usage to predict future ingredient demand.
-
-### Benefits
-
-* Prevents stock shortages
-* Improves purchasing accuracy
-* Reduces over-ordering
-
----
-
-## Automated Reorder System
-
-The system will automatically generate purchase orders when stock falls below defined thresholds.
-
-### Benefits
-
-* Eliminates manual monitoring
-* Ensures uninterrupted operations
-
----
-
-## Waste Pattern Detection
-
-The system will analyze waste data to identify inefficiencies and suggest improvements.
-
-### Benefits
-
-* Reduces waste
-* Improves cost control
-
----
-
-## Smart Recipe Optimization
-
-The system will recommend cost-effective ingredient alternatives based on usage data.
-
-### Benefits
-
-* Reduces ingredient costs
-* Improves profitability
-
----
-
-# 8. Implementation Timeline
-
-| Phase   | Description                    | Duration |
-| ------- | ------------------------------ | -------- |
-| Phase 1 | System setup and configuration | 1 week   |
-| Phase 2 | Data setup and testing         | 1 week   |
-| Phase 3 | Training and deployment        | 1 week   |
-
-Total Estimated Time:
-
-**2–3 weeks**
-
----
-
-# 9. Deliverables
-
-The following will be provided to the client:
-
-* Fully functional restaurant management system
-* User access and configuration
-* Dashboard and reporting tools
-* System documentation
-* User training and support
-
----
-
-# 10. Success Criteria
-
-The project will be considered successful if:
-
-* Inventory is tracked accurately
-* Waste is recorded consistently
-* Stock shortages are reduced
-* Staff can operate the system efficiently
-* Reports support operational decisions
-
----
-
-# What We Achieved With This Version
-
-We reduced:
-
-* Repetition
-* Technical verbosity
-* Excess detail
----
-
-# Tier 1 — Advanced Feature Upgrades (Most Valuable Next)
-
-# Good ideas
-
-# 1) Expiry Date Tracking
-
-Very important in food systems.
-
----
-
-## Add to ingredient batch
-
-Instead of:
-
-```
-current_stock: 10
-```
-
-Use:
-
-```
-batches:
-- quantity
-- expiry_date
-```
-
----
-
-## Example
-
-```
-Tomato
-
-Batch 1:
-quantity: 5
-expiry: Jan 10
-
-Batch 2:
-quantity: 3
-expiry: Jan 15
-```
-
----
-
-## Then you can build:
-
-- Expiry alerts
-- FIFO consumption
-- Waste prediction
-
-# 2) Supplier / Purchase Order Module
-
-Right now:
-
-You track stock consumption.
-
-But not:
-
-```
-where stock comes from
-```
-
----
-
-## Add
-
-### suppliers
-
-```
-name
-phone
-email
-address
-rating
-```
-
-### purchase_orders
-
-```
-supplier_id
-items
-total_cost
-status
-expected_delivery_date
-```
-
----
-
-## Workflow
-
-```
-Low stock detected
-→ Create purchase order
-→ Receive delivery
-→ Stock auto-updated
-```
-
----
-
-This is a **real restaurant workflow**.
-
-# 1) Role-Based Access Control (RBAC)
-
-Right now:
-
-```
-Single admin/manager role
-```
-
-Real restaurants have:
-
-- Admin
-- Manager
-- Chef
-- Staff
-- Auditor
-
----
-
-## Upgrade
-
-Add:
-
-```
-roles:
-- admin
-- manager
-- chef
-- inventory_staff
-- viewer
-```
-
-And permissions:
-
-```
-can_create_recipe
-can_update_stock
-can_view_reports
-can_delete_logs
-```
-
----
-
-## Implementation
-
-Add:
-
-```
-roles collection
-permissions collection
-user_roles mapping
-```
-
-Middleware:
-
-```
-authorize(["admin", "manager"])
-```
-
----
-
-## Interview Value
-
-This shows:
-
-- Security design
-- Access control
-- Enterprise readiness
-
-Huge signal.
-
----
-
----
-
----
-
----
-
----
-
 ---
 
--
+## 3. Proposed Solution
 
-These are the **best next upgrades** that recruiters and senior engineers expect.
+Kitchen Pro provides a centralized platform that automates key kitchen and inventory processes:
 
----
-
-- Can think of it
-    - 1) Real-Time Notifications (WebSockets)
-        
-        Right now:
-        
-        ```
-        polls every 60 seconds
-        ```
-        
-        Industry systems use:
-        
-        ```
-        real-time push
-        ```
-        
-        ---
-        
-        ## Upgrade
-        
-        Use:
-        
-        ```
-        Socket.io
-        or
-        WebSockets
-        ```
-        
-        Instead of:
-        
-        ```
-        GET /unread-count
-        ```
-        
-        Use:
-        
-        ```
-        socket.emit("new_notification")
-        ```
-        
-        ---
-        
-        ## Result
-        
-        ```
-        Stock drops → notification instantly appears
-        ```
-        
-        ---
-        
-        ## Bonus
-        
-        Add:
-        
-        ```jsx
-        sound alert
-        toast notification
-        ```
-        
-    - 2) Multi-Branch / Multi-Restaurant Support
-        
-        Right now:
-        
-        ```
-        Single restaurant
-        ```
-        
-        Real systems support:
-        
-        ```
-        many branches
-        ```
-        
-        ## Add
-        
-        ```
-        restaurants
-        branches
-        users
-        ```
-        
-        ---
-        
-        ## Example
-        
-        ```
-        Restaurant:
-        
-        Pizza Hut
-        
-        Branches:
-        
-        Delhi
-        Mumbai
-        Bangalore
-        ```
-        
-        ---
-        
-        ## Then enable:
-        
-        ```
-        branch-specific inventory
-        branch dashboards
-        central reporting
-        ```
-        
-        ---
-        
-        This turns your system into:
-        
-        ```
-        Enterprise SaaS
-        ```
-        
-
----
-
----
-
-# Tier 2 — Architecture & Performance Upgrades
-
-These show **senior-level backend skills**.
-
----
-
-# 6) Redis Caching Layer
-
-Cache:
-
-```
-dashboard
-ingredient list
-notifications
-```
-
----
-
-## Stack
-
-```
-Redis
-```
-
----
-
-## Example
-
-Instead of:
-
-```
-MongoDB query every time
-```
-
-Do:
-
-```
-Redis cache hit
-```
-
----
-
-## Result
-
-```
-10x faster dashboard
-```
-
----
-
-# 7) Background Jobs / Queue System
-
-Very important.
+- Real-time ingredient stock tracking with batch-level granularity
+- Automatic stock deduction during food preparation (FIFO order)
+- Waste logging with reason tracking and automatic stock adjustment
+- Low-stock and out-of-stock alerts with a notification centre
+- Role-based access control for Admin, Manager, Chef, and Inventory Staff
+- Operational dashboards with consumption and waste analytics
 
 ---
 
-Use:
+## 4. Key Business Benefits
 
-```
-BullMQ
-or
-RabbitMQ
-```
+- **Reduced food wastage** — expiry tracking and FIFO consumption prevent spoilage
+- **Prevented stock shortages** — threshold alerts fire before stockouts occur
+- **Improved inventory accuracy** — every deduction is logged automatically
+- **Staff time savings** — no manual stock counts or spreadsheet updates
+- **Better purchasing decisions** — consumption data drives reorder quantities
+- **Operational accountability** — role-based access ensures staff see only what they need
+- **Improved profit margins** — waste reduction and accurate purchasing lower costs
 
 ---
 
-## Move heavy tasks to background:
+## 5. System Modules
 
-```
-notification scanning
-report generation
-email sending
-daily analytics
-data cleanup
-```
+### 5.1 Authentication & Access Control
 
----
-
-## Example
-
-Instead of:
-
-```
-POST /scan
-```
-
-Do:
-
-```
-enqueue job
-worker processes
-```
-
----
-
-# 8) Soft Delete + Audit Logs
-
-Right now:
-
-Deleting data removes it.
-
-Enterprise systems:
-
-Never delete.
-
----
-
-## Add
+- Secure JWT-based login and registration
+- Role-based access control (RBAC) with four roles: Admin, Manager, Chef, Inventory Staff
+- All system routes protected via authentication middleware
+- Passwords stored using bcrypt hashing
 
-```
-deleted_at
-deleted_by
-updated_by
-created_by
-```
+### 5.2 Ingredient Inventory Management
 
----
+- Add and update ingredients with name, unit, stock quantity, and alert threshold
+- Stock status indicators: In Stock, Low Stock, Out of Stock
+- Server-side paginated ingredient list
+- Soft delete — ingredients are archived, not permanently removed
 
-## Example
+### 5.3 Batch Management
 
-```
-Ingredient deleted
-→ still exists in audit history
-```
+- Track ingredient stock as individual batches with expiry dates
+- FIFO consumption — oldest batch is always deducted first
+- Expiry alerts for batches approaching their expiry date
+- Stock level automatically recalculated from all active batches
 
----
+### 5.4 Recipe Management
 
-This is extremely important for:
+- Create dishes and define required ingredients with exact quantities
+- Ingredient names resolved automatically — no raw IDs shown to users
+- Paginated recipe list
 
-```
-compliance
-forensics
-security
-```
+### 5.5 Consumption & Order Tracking
 
+- Place orders that automatically deduct ingredient stock via FIFO batch logic
+- Full transaction support — if any ingredient has insufficient stock, the entire order rolls back
+- Paginated order and consumption history
 
-# Tier 3 — AI / Smart Automation (Very Impressive)
+### 5.6 Waste Management
 
-These upgrades make your project stand out massively.
+- Log wasted ingredients with quantity and reason (Expired, Spoiled, Overcooked, Damaged, Other)
+- Stock automatically deducted on waste entry
+- Paginated waste history for reporting
 
----
+### 5.7 Notification System
 
-# 11) Demand Forecasting (Machine Learning)
+- On-demand stock scan generates alerts for low-stock and out-of-stock ingredients
+- Deduplication — one notification per ingredient per alert type
+- Bell icon badge shows live unread count, polling every 60 seconds
+- Mark individual or all notifications as read
 
-Predict:
+### 5.8 Dashboard & Analytics
 
-```
-future ingredient demand
-```
+- Single optimised query — all metrics returned in one API call
+- Summary cards: total ingredients, low stock count, out of stock count, total waste volume
+- Consumption vs waste volume comparison
+- Critical low stock table showing items requiring immediate action
+- Inventory health overview
 
 ---
-
-## Example
 
-```
-Chicken consumption:
+## 6. Technical Overview
 
-Mon: 5kg
-Tue: 6kg
-Wed: 8kg
-```
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, React Router v7, Tailwind CSS v4 |
+| Backend | Node.js, Express 5 |
+| Database | MySQL (Aiven Cloud) |
+| Authentication | JWT, bcryptjs |
+| Containerisation | Docker |
+| Testing | Jest 29, React Testing Library |
 
-Model predicts:
+**Architecture principle:** Backend-first. All filtering, sorting, pagination, and aggregation runs on the server. The frontend receives only pre-shaped, minimal responses.
 
-```
-Next week demand: 9kg
-```
-
 ---
 
-## Tech
+## 7. User Roles & Permissions
 
-```
-Python
-Prophet
-TensorFlow
-or
-simple regression
-```
+| Permission | Admin | Manager | Chef | Inventory Staff |
+|---|---|---|---|---|
+| Manage ingredients | ✅ | ✅ | ❌ | ✅ |
+| Manage batches | ✅ | ✅ | ❌ | ✅ |
+| Create recipes | ✅ | ✅ | ✅ | ❌ |
+| Place orders | ✅ | ✅ | ✅ | ❌ |
+| Log waste | ✅ | ✅ | ✅ | ✅ |
+| View notifications | ✅ | ✅ | ✅ | ✅ |
+| View dashboard | ✅ | ✅ | ❌ | ❌ |
+| Manage users | ✅ | ✅ | ❌ | ❌ |
 
 ---
-
-# 12) Auto-Reorder System
-
-When:
-
-```
-stock < threshold
-```
 
-System automatically:
+## 8. Future Roadmap
 
-```
-creates purchase order
-```
+The following features are planned for future versions:
 
----
+### Phase 2 — Supplier & Purchasing
+- Supplier directory with contact information
+- Purchase order creation and tracking
+- Automatic stock update on delivery confirmation
+- Full procurement history
 
-## This is used in:
+### Phase 3 — Advanced Analytics & Automation
+- AI-based demand forecasting using historical consumption data
+- Automated reorder triggers when stock falls below threshold
+- Waste pattern detection with menu optimisation suggestions
+- Smart recipe cost analysis and ingredient substitution recommendations
 
-```
-Amazon
-Walmart
-Restaurant chains
-```
+### Phase 4 — Platform Expansion
+- Multi-branch and multi-restaurant support
+- Branch-level inventory with central reporting
+- Real-time push notifications via WebSockets
+- Mobile-responsive progressive web app (PWA)
 
 ---
 
-# 13) Waste Pattern Detection
+## 9. Implementation Timeline
 
-Detect:
+| Phase | Description | Duration |
+|---|---|---|
+| Phase 1 | System setup and configuration | 1 week |
+| Phase 2 | Data setup and testing | 1 week |
+| Phase 3 | Training and deployment | 1 week |
 
-```
-which ingredient is wasted most
-```
+**Total estimated time: 2–3 weeks**
 
 ---
-
-Then:
 
-```
-suggest menu changes
-```
-
----
+## 10. Deliverables
 
-Example:
+The following will be provided to the client upon project completion:
 
-```
-Lettuce waste high
-→ Reduce order quantity
-```
+- Fully functional restaurant management system (frontend + backend)
+- User accounts configured with appropriate roles
+- Dashboard and reporting tools
+- System and API documentation
+- Docker deployment configuration
+- User training and handover support
 
 ---
 
-# 14) Smart Recipe Optimization
-
-AI suggests:
-
-```
-reduce ingredient cost
-```
-
----
+## 11. Success Criteria
 
-Example:
+The project will be considered successful when:
 
-```
-Replace premium cheese
-→ cheaper alternative
-```
+- Inventory is tracked accurately with no manual intervention required
+- Waste is recorded consistently by kitchen staff
+- Stock shortages are detected before they impact service
+- All staff roles can operate the system without technical assistance
+- Dashboard reports support daily operational decisions
 
 ---
 
-Very advanced.
+## 12. Constraints & Assumptions
 
---- 
- 
+- Client provides a MySQL-compatible database instance (Aiven Cloud recommended)
+- Client provides server infrastructure for deployment (or uses Docker)
+- Initial data entry (ingredients, recipes) is performed by the client during onboarding
+- Internet connectivity is required for cloud database access

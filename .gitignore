@@ -28,9 +28,10 @@ out/
 coverage/
 .nyc_output/
 
-# ─── AI prompt logs (daily JSON files — keep folder, ignore content) ─────────
-.ai-logs/*.json
-.ai-logs/*.txt
+# ─── AI / agent local artifacts ──────────────────────────────────────────────
+.ai-logs/
+.codex
+agents.md
 
 # ─── Docker ──────────────────────────────────────────────────────────────────
 *.env.docker

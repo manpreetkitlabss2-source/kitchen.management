@@ -1,15 +1,22 @@
-const makeOrderPayload = (recipeIds = []) => ({
-  items: recipeIds.map(recipe_id => ({
-    recipe_id,
-    quantity: 1,
-  })),
+/**
+ * Build an order payload from recipe IDs.
+ * @param {string[]} recipeIds
+ * @param {number}   quantity  per item
+ */
+const makeOrderPayload = (recipeIds = [], quantity = 1) => ({
+  items: recipeIds.map(recipe_id => ({ recipe_id, quantity })),
 });
 
-const makeConsumptionPayload = (ingredientIds = []) => ({
+/**
+ * Build a manual consumption payload from ingredient IDs.
+ * @param {string[]} ingredientIds
+ * @param {number}   quantityRequired  per item
+ */
+const makeConsumptionPayload = (ingredientIds = [], quantityRequired = 0.1) => ({
   recipe_id: null,
-  items: ingredientIds.map(id => ({
-    ingredient_id: id,
-    quantity_required: 0.1,
+  items: ingredientIds.map(ingredient_id => ({
+    ingredient_id,
+    quantity_required: quantityRequired,
   })),
 });
 
